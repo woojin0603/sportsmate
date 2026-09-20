@@ -1,0 +1,21 @@
+{
+  "dataset_code": "NATIONAL_FACILITIES_15113986",
+  "url": "https://apis.data.go.kr/B551014/SRVC_API_SFMS_FACI/TODZ_API_SFMS_FACI",
+  "service_key_env": "PUBLIC_FACILITY_SERVICE_KEY",
+  "key_param": "serviceKey",
+  "page_param": "pageNo",
+  "size_param": "numOfRows",
+  "page_size": 100,
+  "params": {"resultType": "JSON"},
+  "items_path": "response.body.items.item",
+  "fields": {
+    "sourceKey": "faci_cd",
+    "name": "faci_nm",
+    "regionCode": "cp_nm",
+    "regionName": "cp_nm",
+    "roadAddress": "faci_road_addr",
+    "type": "ftype_nm",
+    "latitude": "faci_lat",
+    "longitude": "faci_lot"
+  }
+}

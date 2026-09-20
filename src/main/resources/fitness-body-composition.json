@@ -1,0 +1,118 @@
+{
+  "source": "https://nfa.kspo.or.kr/reserve/0/selectMeasureGradeItemListByAgeSe.kspo",
+  "rows": [
+    {
+      "stage": "CHILD",
+      "gender": "MALE",
+      "age": 11,
+      "bmiMax": 24.2,
+      "otherMax": 0.50
+    },
+    {
+      "stage": "CHILD",
+      "gender": "MALE",
+      "age": 12,
+      "bmiMax": 25.1,
+      "otherMax": 0.50
+    },
+    {
+      "stage": "CHILD",
+      "gender": "FEMALE",
+      "age": 11,
+      "bmiMax": 23.3,
+      "otherMax": 0.47
+    },
+    {
+      "stage": "CHILD",
+      "gender": "FEMALE",
+      "age": 12,
+      "bmiMax": 24.1,
+      "otherMax": 0.47
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 13,
+      "bmiMax": 25.7,
+      "otherMax": 22.6
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 14,
+      "bmiMax": 26,
+      "otherMax": 22.4
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 15,
+      "bmiMax": 26.2,
+      "otherMax": 22.2
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 16,
+      "bmiMax": 26.4,
+      "otherMax": 22.3
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 17,
+      "bmiMax": 26.6,
+      "otherMax": 22.5
+    },
+    {
+      "stage": "TEEN",
+      "gender": "MALE",
+      "age": 18,
+      "bmiMax": 26.9,
+      "otherMax": 23.6
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 13,
+      "bmiMax": 24.8,
+      "otherMax": 33
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 14,
+      "bmiMax": 25.2,
+      "otherMax": 34.5
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 15,
+      "bmiMax": 25.4,
+      "otherMax": 35.2
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 16,
+      "bmiMax": 25.5,
+      "otherMax": 36.1
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 17,
+      "bmiMax": 25.5,
+      "otherMax": 36.9
+    },
+    {
+      "stage": "TEEN",
+      "gender": "FEMALE",
+      "age": 18,
+      "bmiMax": 25.5,
+      "otherMax": 36.4
+    }
+  ]
+}
+

@@ -1,0 +1,27 @@
+{
+  "name": "sportmap-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader runner",
+    "build": "vite build --configLoader runner",
+    "build:spring": "npm run build && node tools/copy-to-spring.mjs",
+    "preview": "vite preview --configLoader runner",
+    "format": "prettier --plugin prettier-plugin-java --end-of-line lf --write \"../src/main/java/**/*.java\" \"../src/test/java/**/*.java\" \"src/**/*.{js,jsx,css}\" vite.config.js",
+    "format:check": "prettier --plugin prettier-plugin-java --end-of-line lf --check \"../src/main/java/**/*.java\" \"../src/test/java/**/*.java\" \"src/**/*.{js,jsx,css}\" vite.config.js"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-java": "^2.10.3",
+    "vite": "^7.3.0"
+  }
+}
