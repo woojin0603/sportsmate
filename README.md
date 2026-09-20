@@ -78,7 +78,7 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
 
 추가 제공된 체력측정 운동처방 JSON은 `tools/build_fitness_prescriptions.mjs`로 익명 집계했습니다. 일반 처방(2026년 3~7월), 장애인 처방(2025년 8~12월), 지역 체력측정 처방(2026년 7월 배포본)을 각각 분리합니다. 지역 데이터의 2025년 7월·2026년 2월 파일은 7월 배포본과 시작 기록이 겹치는 누적 스냅샷이므로 중복 집계를 피하려고 최신 배포본만 집계했습니다. 원본의 회원 식별자·개별 검사 수치·측정일은 프로젝트에 넣지 않았고, 연령대·성별·공식 등급·장애 유형별로 **같은 처방이 5건 이상인 경우** 빈도 상위 사례만 `src/main/resources/fitness-prescription-catalog.json`에 보관합니다. `/recommendations` 화면의 처방 사례는 통계적 참고자료이며 개인별 처방이나 PDF 평가의 A~D 등급과 직접 연결하지 않습니다. `GET /api/fitness/prescriptions?age=30&source=GENERAL&sex=F`로 조회할 수 있습니다.
 
-지역 체력측정 자료에서 체력인증센터의 명칭·주소·연락처·운영시간 79곳을 추출했습니다. `/fitness-centers` 화면과 `GET /api/fitness/centers?keyword=서울`에서 찾을 수 있습니다. 원본 좌표와 연락처는 최신 정보와 다를 수 있으므로 방문 전에 센터에 확인해야 합니다. 원본 파일을 다시 집계하려면 `node tools/build_fitness_prescriptions.mjs "<JSON 파일 폴더>"`를 실행하고, React 변경사항은 `frontend`에서 `npm run build:spring`으로 반영하세요.
+지역 체력측정 자료에서 체력인증센터의 명칭·주소·연락처·운영시간 79곳을 추출했습니다. `/fitness-centers` 화면에서 `시·도 → 시·군·구 → 하위 구역` 순서로 검색할 수 있고, `GET /api/fitness/centers?province=경기도&city=수원시&locality=영통구` API도 제공합니다. 지역 선택지는 `GET /api/fitness/centers/regions`에서 조회합니다. 원본 좌표와 연락처는 최신 정보와 다를 수 있으므로 방문 전에 센터에 확인해야 합니다. 원본 파일을 다시 집계하려면 `node tools/build_fitness_prescriptions.mjs "<JSON 파일 폴더>"`를 실행하고, React 변경사항은 `frontend`에서 `npm run build:spring`으로 반영하세요.
 
 센터 79곳 모두 원본의 `REPRSNT_TEL_NO` 전화번호가 있으며, 센터 화면에서 하이픈을 넣어 표시하고 누르면 전화 앱으로 연결합니다. 지역·센터명뿐 아니라 전화번호 숫자로도 검색할 수 있습니다. 출장 센터 중에는 본 센터와 같은 대표번호를 사용하는 곳이 있습니다.
 

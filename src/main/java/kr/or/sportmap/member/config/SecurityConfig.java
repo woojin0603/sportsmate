@@ -104,7 +104,7 @@ public class SecurityConfig {
             path.startsWith("/api/regions") ||
             path.startsWith("/api/recommendations") ||
             path.equals("/api/fitness/prescriptions") ||
-            path.equals("/api/fitness/centers") ||
+            path.startsWith("/api/fitness/centers") ||
             path.startsWith("/api/notices") ||
             path.startsWith("/api/qna")))
       ) return null;
@@ -170,6 +170,7 @@ public class SecurityConfig {
           "/api/recommendations/**",
           "/api/fitness/prescriptions",
           "/api/fitness/centers",
+          "/api/fitness/centers/**",
           "/api/notices/**",
           "/api/qna/**"
         )

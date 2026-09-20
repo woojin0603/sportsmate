@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/fitness")
 public class FitnessCatalogController {
 
+  private static final Pattern DISTRICT_PATTERN = Pattern.compile(
+    "^(.+?(?:시|군|구))(.*)$"
+  );
   private final JsonNode catalog;
 
   public FitnessCatalogController(ObjectMapper mapper) throws IOException {
@@ -75,13 +79,34 @@ public class FitnessCatalogController {
       .toList();
   }
 
-  /** 체력측정센터 이름이나 지역명으로 센터 연락처를 찾는다. */
+  /** 체력측정센터의 시·도, 시·군·구, 하위 구역 선택지를 반환한다. */
+  @GetMapping("/centers/regions")
+  public List<CenterRegionResponse> centerRegions() {
+    return StreamSupport.stream(catalog.path("centers").spliterator(), false)
+      .map(FitnessCatalogController::centerRegion)
+      .distinct()
+      .sorted(Comparator.comparing(CenterRegionResponse::displayName))
+      .toList();
+  }
+
+  /** 체력측정센터 이름과 선택한 행정구역으로 센터 연락처를 찾는다. */
   @GetMapping("/centers")
   public List<JsonNode> centers(
-    @RequestParam(defaultValue = "") String keyword
+    @RequestParam(defaultValue = "") String keyword,
+    @RequestParam(defaultValue = "") String province,
+    @RequestParam(defaultValue = "") String city,
+    @RequestParam(defaultValue = "") String locality
   ) {
     String search = keyword.trim().toLowerCase();
     return StreamSupport.stream(catalog.path("centers").spliterator(), false)
+      .filter(row -> {
+        CenterRegionResponse region = centerRegion(row);
+        return (
+          (province.isBlank() || province.equals(region.province())) &&
+          (city.isBlank() || city.equals(region.city())) &&
+          (locality.isBlank() || locality.equals(region.locality()))
+        );
+      })
       .filter(
         row ->
           search.isBlank() ||
@@ -106,4 +131,37 @@ public class FitnessCatalogController {
       .limit(100)
       .toList();
   }
+
+  /** 내부 코드와 기존 테스트에서 키워드만으로 센터를 조회한다. */
+  List<JsonNode> centers(String keyword) {
+    return centers(keyword, "", "", "");
+  }
+
+  /** 붙어 있는 시군구 문자열을 상위 지역과 하위 구역으로 분리한다. */
+  private static CenterRegionResponse centerRegion(JsonNode row) {
+    String province = row.path("province").asText().trim();
+    String district = row.path("district").asText().trim();
+    if (district.equals("-")) district = "";
+    var matcher = DISTRICT_PATTERN.matcher(district);
+    String city = district;
+    String locality = "";
+    if (matcher.matches()) {
+      city = matcher.group(1);
+      locality = matcher.group(2);
+    }
+    String displayName = String.join(
+      " ",
+      java.util.stream.Stream.of(province, city, locality)
+        .filter(value -> !value.isBlank())
+        .toList()
+    );
+    return new CenterRegionResponse(province, city, locality, displayName);
+  }
+
+  public record CenterRegionResponse(
+    String province,
+    String city,
+    String locality,
+    String displayName
+  ) {}
 }

@@ -56,6 +56,10 @@ const navItems = [
   { label: "커뮤니티", path: "/community", icon: MessageCircle },
 ];
 
+// 비슷한 접두사의 메뉴가 함께 활성화되지 않도록 경로 구간 단위로 비교한다.
+const isNavPath = (currentPath, destination) =>
+  currentPath === destination || currentPath.startsWith(`${destination}/`);
+
 // 공공데이터포털 시설 API의 cp_nm 값과 일치하는 17개 시·도 이름이다.
 const provinces = [
   "서울특별시",
@@ -252,7 +256,7 @@ function Header({
       : path === "/admin"
         ? "관리자"
         : navItems.find(
-            (item) => path.startsWith(item.path) && item.path !== "/",
+            (item) => item.path !== "/" && isNavPath(path, item.path),
           )?.label || "마이페이지";
   return (
     <header className="topbar">
@@ -354,7 +358,7 @@ function Sidebar({
                 (
                   destination === "/"
                     ? path === "/" || path.startsWith("/facilities/")
-                    : path.startsWith(destination)
+                    : isNavPath(path, destination)
                 )
                   ? "active"
                   : ""
@@ -413,7 +417,7 @@ function Sidebar({
 }
 
 // 시설·프로그램 수를 포함한 첫 화면 안내 영역을 표시한다.
-function Hero({ navigate, facilityCount, programCount }) {
+function Hero({ navigate, user, openAuth }) {
   return (
     <section className="hero">
       <div className="hero-content">
@@ -473,15 +477,11 @@ function Hero({ navigate, facilityCount, programCount }) {
           <ArrowUpRight size={18} />
         </div>
       </div>
-      <div className="hero-counter">
-        <span>
-          <strong>{facilityCount ?? "—"}</strong>개의 시설
-        </span>
-        <i />
-        <span>
-          <strong>{programCount ?? "—"}</strong>개의 프로그램
-        </span>
-      </div>
+      <HomeReservationCalendar
+        user={user}
+        navigate={navigate}
+        openAuth={openAuth}
+      />
     </section>
   );
 }
@@ -577,7 +577,13 @@ function MapFocus({ items }) {
   return null;
 }
 // 좌표가 있는 시설을 지도에 표시하고 마커 선택을 전달한다.
-function FacilityMap({ items, onOpen, compact = false }) {
+function FacilityMap({
+  items,
+  onOpen,
+  compact = false,
+  resultTotal = 0,
+  fullResultMap = false,
+}) {
   const mapped = items.filter(isKoreaCoordinate);
   return (
     <div className={`map-panel ${compact ? "compact-map" : ""}`}>
@@ -623,7 +629,12 @@ function FacilityMap({ items, onOpen, compact = false }) {
         )}
       </div>
       <div className="map-footer">
-        <MapPin size={16} /> 마커를 누르면 시설 정보를 볼 수 있어요.
+        <MapPin size={16} />
+        {fullResultMap
+          ? resultTotal > 100
+            ? "검색 결과 중 좌표가 있는 최대 100개를 표시합니다."
+            : "좌표가 있는 검색 결과를 모두 표시합니다."
+          : "마커를 누르면 시설 정보를 볼 수 있어요."}
       </div>
     </div>
   );
@@ -635,12 +646,14 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-  const reservations = useRemote(user ? "/api/reservations?size=100" : null);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [programMap, setProgramMap] = useState({});
+  const reservations = useRemote(user ? "/api/reservations?size=100" : null);
   const activeReservations = pageList(reservations.data).filter(
     (item) => item.status !== "CANCELLED" && item.startsAt,
   );
 
+  // 날짜별 미니탭에서 프로그램명을 보여주기 위해 예약 프로그램을 조회한다.
   useEffect(() => {
     if (!user || activeReservations.length === 0) {
       setProgramMap({});
@@ -668,103 +681,205 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
     const target = new Date(value);
     return `${target.getFullYear()}-${target.getMonth()}-${target.getDate()}`;
   };
-  const reservedDates = new Set(
-    activeReservations.map((item) => dateKey(item.startsAt)),
-  );
-  const upcoming = [...activeReservations]
-    .filter(
-      (item) => new Date(item.startsAt) >= new Date().setHours(0, 0, 0, 0),
-    )
-    .sort((left, right) => new Date(left.startsAt) - new Date(right.startsAt))
-    .slice(0, 3);
+  const scheduleColors = [
+    "#65a853",
+    "#e19055",
+    "#6b8fd3",
+    "#a875c3",
+    "#d46573",
+    "#45a59c",
+  ];
+  const weekdayNumbers = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 };
+  // '월수금 / 19:00~19:50' 형식에서 실제 운영 요일만 추출한다.
+  const operatingWeekdays = (scheduleText) => {
+    const dayPart = String(scheduleText || "").split("/")[0];
+    if (dayPart.includes("매일")) return new Set([0, 1, 2, 3, 4, 5, 6]);
+    if (dayPart.includes("평일")) return new Set([1, 2, 3, 4, 5]);
+    if (dayPart.includes("주말")) return new Set([0, 6]);
+    const range = dayPart.match(/([월화수목금토일])\s*[~～\-]\s*([월화수목금토일])/);
+    if (range) {
+      const result = new Set();
+      let current = weekdayNumbers[range[1]];
+      const end = weekdayNumbers[range[2]];
+      for (let count = 0; count < 7; count += 1) {
+        result.add(current);
+        if (current === end) break;
+        current = (current + 1) % 7;
+      }
+      return result;
+    }
+    return new Set(
+      [...dayPart]
+        .filter((letter) => weekdayNumbers[letter] != null)
+        .map((letter) => weekdayNumbers[letter]),
+    );
+  };
+  // 예약 기간 안이면서 프로그램 운영 요일인 경우에만 해당 날짜의 일정으로 처리한다.
+  const schedulesOn = (day) => {
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    return activeReservations.filter((item) => {
+      const startsAt = new Date(item.startsAt);
+      const endsAt = item.endsAt ? new Date(item.endsAt) : new Date(startsAt);
+      if (!item.endsAt) endsAt.setDate(endsAt.getDate() + 1);
+      if (!(startsAt < dayEnd && endsAt > dayStart)) return false;
+      const weekdays = operatingWeekdays(
+        programMap[item.programId]?.scheduleText,
+      );
+      return weekdays.size
+        ? weekdays.has(day.getDay())
+        : dateKey(day) === dateKey(startsAt);
+    });
+  };
+  const scheduleColor = (programId) =>
+    scheduleColors[Math.abs(Number(programId) || 0) % scheduleColors.length];
+  const selectedSchedules = selectedDate ? schedulesOn(selectedDate) : [];
 
   return (
-    <section className="home-calendar-panel">
-      <div className="home-calendar-header">
-        <div>
-          <span className="map-live">
-            <span /> MY SCHEDULE
-          </span>
-          <h3>예약 캘린더</h3>
+    <>
+      <section className="home-calendar-panel hero-home-calendar">
+        <div className="home-calendar-header">
+          <div>
+            <span className="map-live">
+              <span /> MY SCHEDULE
+            </span>
+            {user ? (
+              <button
+                className="home-calendar-title"
+                onClick={() => navigate("/reservations")}
+              >
+                내 일정 <ArrowRight size={16} />
+              </button>
+            ) : (
+              <h3>내 일정</h3>
+            )}
+          </div>
         </div>
-        {user && (
-          <button onClick={() => navigate("/reservations")}>전체 일정</button>
+        {!user ? (
+          <div className="home-calendar-empty">
+            <CalendarDays size={28} />
+            <p>일정을 확인하려면 로그인하세요</p>
+            <button onClick={openAuth}>로그인</button>
+          </div>
+        ) : reservations.loading ? (
+          <div className="home-calendar-empty">일정을 불러오는 중입니다.</div>
+        ) : reservations.error ? (
+          <div className="home-calendar-empty">
+            예약 일정을 불러오지 못했습니다.
+          </div>
+        ) : (
+          <>
+            <div className="calendar-month-nav">
+              <button
+                aria-label="이전 달"
+                onClick={() =>
+                  setMonth(
+                    new Date(month.getFullYear(), month.getMonth() - 1, 1),
+                  )
+                }
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <strong>
+                {month.getFullYear()}년 {month.getMonth() + 1}월
+              </strong>
+              <button
+                aria-label="다음 달"
+                onClick={() =>
+                  setMonth(
+                    new Date(month.getFullYear(), month.getMonth() + 1, 1),
+                  )
+                }
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
+            <div className="calendar-weekdays">
+              {["일", "월", "화", "수", "목", "금", "토"].map((weekday) => (
+                <span key={weekday}>{weekday}</span>
+              ))}
+            </div>
+            <div className="calendar-days">
+              {days.map((day) => {
+                const daySchedules = schedulesOn(day);
+                const reserved = daySchedules.length > 0;
+                const outside = day.getMonth() !== month.getMonth();
+                const today = dateKey(day) === dateKey(new Date());
+                return (
+                  <button
+                    type="button"
+                    key={day.toISOString()}
+                    className={`${outside ? "outside" : ""} ${today ? "today" : ""} ${reserved ? "reserved" : ""}`}
+                    title={reserved ? "예약 일정이 있습니다" : undefined}
+                    onClick={() => setSelectedDate(day)}
+                  >
+                    {day.getDate()}
+                    {reserved && (
+                      <span className="calendar-schedule-dots">
+                        {daySchedules.slice(0, 4).map((item) => (
+                          <i
+                            key={item.id}
+                            style={{
+                              backgroundColor: scheduleColor(item.programId),
+                            }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
-      </div>
-      {!user ? (
-        <div className="home-calendar-empty">
-          <CalendarDays size={28} />
-          <p>로그인하고 예약 일정을 확인하세요.</p>
-          <button onClick={openAuth}>로그인</button>
-        </div>
-      ) : reservations.loading ? (
-        <div className="home-calendar-empty">일정을 불러오는 중입니다.</div>
-      ) : reservations.error ? (
-        <div className="home-calendar-empty">
-          예약 일정을 불러오지 못했습니다.
-        </div>
-      ) : (
-        <>
-          <div className="calendar-month-nav">
+      </section>
+      {user && selectedDate && (
+        <section className="hero-schedule-detail">
+          <div className="calendar-day-popover-header">
+            <div>
+              <span className="map-live">
+                <span /> SELECTED DAY
+              </span>
+              <strong>
+                {selectedDate.toLocaleDateString("ko-KR", {
+                  month: "long",
+                  day: "numeric",
+                  weekday: "short",
+                })}
+              </strong>
+            </div>
             <button
-              aria-label="이전 달"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-              }
+              aria-label="일정 패널 닫기"
+              onClick={() => setSelectedDate(null)}
             >
-              <ChevronLeft size={17} />
-            </button>
-            <strong>
-              {month.getFullYear()}년 {month.getMonth() + 1}월
-            </strong>
-            <button
-              aria-label="다음 달"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-              }
-            >
-              <ChevronRight size={17} />
+              <X size={17} />
             </button>
           </div>
-          <div className="calendar-weekdays">
-            {["일", "월", "화", "수", "목", "금", "토"].map((weekday) => (
-              <span key={weekday}>{weekday}</span>
-            ))}
-          </div>
-          <div className="calendar-days">
-            {days.map((day) => {
-              const reserved = reservedDates.has(dateKey(day));
-              const outside = day.getMonth() !== month.getMonth();
-              const today = dateKey(day) === dateKey(new Date());
-              return (
-                <span
-                  key={day.toISOString()}
-                  className={`${outside ? "outside" : ""} ${today ? "today" : ""} ${reserved ? "reserved" : ""}`}
-                  title={reserved ? "예약 일정이 있습니다" : undefined}
-                >
-                  {day.getDate()}
-                </span>
-              );
-            })}
-          </div>
-          <div className="calendar-upcoming">
-            {upcoming.length ? (
-              upcoming.map((item) => (
+          {selectedSchedules.length ? (
+            <div className="calendar-day-schedules">
+              {selectedSchedules.map((item) => (
                 <button key={item.id} onClick={() => navigate("/reservations")}>
-                  <span>{shortDate(item.startsAt)}</span>
+                  <i
+                    style={{ backgroundColor: scheduleColor(item.programId) }}
+                  />
                   <strong>
                     {programMap[item.programId]?.name ||
                       `프로그램 ${item.programId}`}
                   </strong>
+                  <span>{statusText[item.status] || item.status}</span>
                 </button>
-              ))
-            ) : (
-              <p>예정된 예약이 없습니다.</p>
-            )}
-          </div>
-        </>
+              ))}
+            </div>
+          ) : (
+            <div className="hero-schedule-empty">
+              <CalendarDays size={31} />
+              <p>일정이 없습니다.</p>
+            </div>
+          )}
+        </section>
       )}
-    </section>
+    </>
   );
 }
 
@@ -794,7 +909,25 @@ function FacilitiesPage({ navigate, user, openAuth }) {
         cp_nm: province,
         cpb_nm: submittedCity,
       });
+  // 목록 페이지와 별도로 지도용 시설을 API 최대 허용량까지 조회한다.
+  const mapPath = locality
+    ? query("/api/facilities/external/by-locality", {
+        cp_nm: province,
+        cpb_nm: submittedCity,
+        addr_emd_nm: locality,
+        faci_nm: submitted,
+        page: 0,
+        size: 100,
+      })
+    : query("/api/facilities/external", {
+        pageNo: 1,
+        numOfRows: 100,
+        faci_nm: submitted,
+        cp_nm: province,
+        cpb_nm: submittedCity,
+      });
   const facilities = useRemote(livePath);
+  const mapFacilities = useRemote(mapPath);
   const localities = useRemote(
     submittedCity
       ? query("/api/facilities/external/localities", {
@@ -811,6 +944,13 @@ function FacilitiesPage({ navigate, user, openAuth }) {
   const items = (Array.isArray(liveRaw) ? liveRaw : [liveRaw])
     .filter(Boolean)
     .map(normalizeLiveFacility);
+  const mapBody = mapFacilities.data?.response?.body;
+  const mapRaw = locality
+    ? mapFacilities.data?.content || []
+    : mapBody?.items?.item || [];
+  const mapItems = (Array.isArray(mapRaw) ? mapRaw : [mapRaw])
+    .filter(Boolean)
+    .map(normalizeLiveFacility);
   const total = Number(
     locality
       ? facilities.data?.page?.totalElements || 0
@@ -823,7 +963,9 @@ function FacilitiesPage({ navigate, user, openAuth }) {
       : Math.ceil(total / 9),
   };
   const openFacility = (id) => {
-    setSelectedExternal(items.find((item) => item.id === id) || null);
+    setSelectedExternal(
+      [...items, ...mapItems].find((item) => item.id === id) || null,
+    );
   };
   const submit = (event) => {
     event.preventDefault();
@@ -834,11 +976,7 @@ function FacilitiesPage({ navigate, user, openAuth }) {
   };
   return (
     <>
-      <Hero
-        navigate={navigate}
-        facilityCount={total}
-        programCount={programs.data?.page?.totalElements}
-      />
+      <Hero navigate={navigate} user={user} openAuth={openAuth} />
       <div className="quick-stats">
         <div>
           <span className="stat-icon peach">
@@ -996,11 +1134,12 @@ function FacilitiesPage({ navigate, user, openAuth }) {
             )}
           </div>
           <aside className="facility-side-column">
-            <FacilityMap items={items} onOpen={openFacility} compact />
-            <HomeReservationCalendar
-              user={user}
-              navigate={navigate}
-              openAuth={openAuth}
+            <FacilityMap
+              items={mapFacilities.error ? items : mapItems}
+              onOpen={openFacility}
+              compact
+              resultTotal={total}
+              fullResultMap
             />
           </aside>
         </div>
@@ -2218,9 +2357,59 @@ function RecommendationsPage() {
 function FitnessCentersPage() {
   const [keyword, setKeyword] = useState("");
   const [submitted, setSubmitted] = useState("");
-  const centers = useRemote(
-    `/api/fitness/centers?${new URLSearchParams({ keyword: submitted })}`,
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [locality, setLocality] = useState("");
+  const [submittedRegion, setSubmittedRegion] = useState({
+    province: "",
+    city: "",
+    locality: "",
+  });
+  const regionOptions = useRemote("/api/fitness/centers/regions");
+  // 센터가 실제로 존재하는 지역만 단계별 선택지로 구성한다.
+  const provinces = useMemo(
+    () =>
+      [
+        ...new Set((regionOptions.data || []).map((option) => option.province)),
+      ].filter(Boolean),
+    [regionOptions.data],
   );
+  const cities = useMemo(
+    () =>
+      [
+        ...new Set(
+          (regionOptions.data || [])
+            .filter((option) => option.province === province)
+            .map((option) => option.city),
+        ),
+      ].filter(Boolean),
+    [regionOptions.data, province],
+  );
+  const localities = useMemo(
+    () =>
+      [
+        ...new Set(
+          (regionOptions.data || [])
+            .filter(
+              (option) => option.province === province && option.city === city,
+            )
+            .map((option) => option.locality),
+        ),
+      ].filter(Boolean),
+    [regionOptions.data, province, city],
+  );
+  const centers = useRemote(
+    query("/api/fitness/centers", {
+      keyword: submitted,
+      ...submittedRegion,
+    }),
+  );
+  const displayRegion = (center) =>
+    (regionOptions.data || []).find(
+      (option) =>
+        option.province === center.province &&
+        `${option.city}${option.locality}` === center.district,
+    )?.displayName || `${center.province} ${center.district}`;
   return (
     <>
       <div className="page-intro intro-recommend">
@@ -2228,6 +2417,14 @@ function FitnessCentersPage() {
           <span className="eyebrow">FITNESS CENTERS</span>
           <h1>체력측정센터 찾기</h1>
           <p>공공데이터에 수록된 센터 연락처와 운영시간을 확인하세요.</p>
+          <a
+            className="fitness-center-official-link"
+            href="https://nfa.kspo.or.kr/main.kspo"
+            target="_blank"
+            rel="noreferrer"
+          >
+            국민체력100 공식 홈페이지 <ArrowUpRight size={17} />
+          </a>
         </div>
       </div>
       <section className="page-section">
@@ -2235,15 +2432,70 @@ function FitnessCentersPage() {
           className="center-search"
           onSubmit={(event) => {
             event.preventDefault();
-            setSubmitted(keyword);
+            setSubmitted(keyword.trim());
+            setSubmittedRegion({ province, city, locality });
           }}
         >
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="지역, 센터 이름 또는 전화번호"
-            aria-label="센터 검색"
-          />
+          <label>
+            시·도
+            <select
+              value={province}
+              onChange={(event) => {
+                setProvince(event.target.value);
+                setCity("");
+                setLocality("");
+              }}
+            >
+              <option value="">전체 시·도</option>
+              {provinces.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            시·군·구
+            <select
+              value={city}
+              disabled={!province}
+              onChange={(event) => {
+                setCity(event.target.value);
+                setLocality("");
+              }}
+            >
+              <option value="">전체 시·군·구</option>
+              {cities.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            하위 구역
+            <select
+              value={locality}
+              disabled={!city || localities.length === 0}
+              onChange={(event) => setLocality(event.target.value)}
+            >
+              <option value="">전체 하위 구역</option>
+              {localities.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="center-keyword-field">
+            센터 검색
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="센터 이름 또는 전화번호"
+              aria-label="센터 검색"
+            />
+          </label>
           <button className="button button-dark">검색</button>
         </form>
         {centers.loading ? (
@@ -2259,8 +2511,8 @@ function FitnessCentersPage() {
               >
                 <h3>{center.name} 체력인증센터</h3>
                 <p>
-                  <MapPin size={16} /> {center.province} {center.district}{" "}
-                  {center.road} {center.buildingNumber}
+                  <MapPin size={16} /> {displayRegion(center)} {center.road}{" "}
+                  {center.buildingNumber}
                 </p>
                 {center.operatingDays && (
                   <p>

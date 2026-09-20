@@ -89,6 +89,8 @@
 | GET | `/api/programs/regions` | 없음 | 200, 프로그램이 존재하는 지역의 `province`, `city`, `locality`, `displayName` 배열 |
 | GET | `/api/programs/{id}` | 프로그램 ID | 200, 프로그램 객체 |
 | GET | `/api/recommendations?age=30` | `age` 필수, 0~120 | 200, 연령에 맞는 추천 운동 목록 |
+| GET | `/api/fitness/centers/regions` | 없음 | 200, 센터가 존재하는 `province`, `city`, `locality`, `displayName` 배열 |
+| GET | `/api/fitness/centers` | `keyword`, `province`, `city`, `locality` 모두 선택 | 200, 조건에 맞는 체력측정센터 목록 |
 
 프로그램 응답 필드: `id`, `facilityId`, `operatingOrganization`, `regionName`, `name`, `sportType`, `scheduleText`, `eligibility`, `fee`, `capacity`, `bookingSupported`, `beginsOn`, `endsOn`, `registrationUrl`. `operatingOrganization`은 프로그램과 연결된 시설명이며 `regionName`은 시설 주소·지역 계층에서 시·도부터 조합한 표시명입니다. `region`에는 `서울특별시`, `광진구`, `퇴계동`처럼 주소에 포함된 행정구역을 입력할 수 있고 `keyword`와 동시에 적용됩니다. `facilityId`가 있으면 그 시설의 프로그램을 조회합니다. 없는 프로그램 상세는 404입니다. 추천 운동은 현재 DB에 적재된 자료가 없으면 빈 목록이 정상입니다. 프로그램은 `tools/import_programs.py` 또는 내부 적재 API로만 등록할 수 있습니다. 적재 API의 본문 예시는 다음과 같습니다.
 

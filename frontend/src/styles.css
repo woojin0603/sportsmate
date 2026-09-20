@@ -487,6 +487,7 @@ textarea:focus-visible {
 .hero-content {
   position: relative;
   z-index: 3;
+  max-width: 32%;
 }
 .hero-pill {
   display: inline-flex;
@@ -537,6 +538,7 @@ textarea:focus-visible {
   width: 41%;
   height: 100%;
   top: 0;
+  opacity: 0.28;
 }
 .hero-orbit {
   position: absolute;
@@ -1018,6 +1020,20 @@ textarea:focus-visible {
   padding: 16px;
   min-width: 0;
 }
+.hero-home-calendar {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: calc(4% + 360px);
+  left: auto;
+  width: 340px;
+  min-height: 298px;
+  transform: translateY(-50%);
+  border-color: #ffffff66;
+  background: #fffffff2;
+  box-shadow: 0 18px 45px #0b2c2245;
+  color: #294a38;
+}
 .home-calendar-header {
   display: flex;
   justify-content: space-between;
@@ -1027,6 +1043,21 @@ textarea:focus-visible {
 .home-calendar-header h3 {
   margin: 5px 0 0;
   font-size: 17px;
+}
+.home-calendar-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #284d38;
+  font-size: 18px;
+  font-weight: 800;
+}
+.home-calendar-title:hover {
+  color: #60934e;
 }
 .home-calendar-header > button,
 .home-calendar-empty button {
@@ -1069,30 +1100,129 @@ textarea:focus-visible {
   font-size: 12px;
   padding: 4px 0;
 }
-.calendar-days span {
+.calendar-days > button {
   position: relative;
   display: grid;
   place-items: center;
   min-height: 31px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-size: 13px;
   color: #445a4a;
   border-radius: 8px;
 }
-.calendar-days span.outside {
+.calendar-days > button:hover {
+  background: #f1f7ec;
+}
+.calendar-days > button.outside {
   color: #c5cdc6;
 }
-.calendar-days span.today {
+.calendar-days > button.today {
   background: #eef6e7;
   font-weight: 800;
 }
-.calendar-days span.reserved::after {
-  content: "";
+.calendar-schedule-dots {
   position: absolute;
   bottom: 2px;
+  left: 50%;
+  display: flex;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+.calendar-schedule-dots i {
+  display: block;
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #70a654;
+}
+.hero-schedule-detail {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  right: 4%;
+  width: 340px;
+  min-height: 298px;
+  max-height: 298px;
+  overflow: auto;
+  padding: 16px;
+  transform: translateY(-50%);
+  border: 1px solid #ffffff66;
+  border-radius: 14px;
+  background: #fffffff8;
+  box-shadow: 0 12px 32px #173e3252;
+  color: #294a38;
+}
+.calendar-day-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.calendar-day-popover-header > div {
+  display: grid;
+  gap: 5px;
+}
+.calendar-day-popover-header strong {
+  color: #31523d;
+  font-size: 14px;
+}
+.calendar-day-popover-header button {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: #7b8d7f;
+}
+.calendar-day-schedules {
+  display: grid;
+  gap: 6px;
+}
+.calendar-day-schedules > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: #f0f7ea;
+  text-align: left;
+}
+.calendar-day-schedules > button > i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+.calendar-day-schedules strong {
+  flex: 1;
+  overflow: hidden;
+  color: #355341;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calendar-day-schedules span {
+  flex: none;
+  color: #6a9567;
+  font-size: 12px;
+  font-weight: 800;
+}
+.hero-schedule-empty {
+  min-height: 215px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  color: #7da276;
+}
+.hero-schedule-empty p {
+  margin: 0;
+  color: #718176;
+  font-size: 15px;
 }
 .calendar-upcoming {
   display: grid;
@@ -1578,6 +1708,27 @@ textarea:focus-visible {
 .intro-recommend p {
   color: #908baa;
 }
+.fitness-center-official-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 10px 14px;
+  border: 1px solid #cfcbe3;
+  border-radius: 9px;
+  background: #fff;
+  color: #5d5684;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 6px 16px #665e8c17;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.fitness-center-official-link:hover {
+  transform: translateY(-2px);
+  background: #f8f7fd;
+}
 .recommend-art {
   width: 215px;
   height: 190px;
@@ -1661,13 +1812,15 @@ textarea:focus-visible {
   gap: 12px;
   margin-bottom: 22px;
 }
-.prescription-controls label {
+.prescription-controls label,
+.center-search label {
   font-size: 16px;
   font-weight: 700;
   color: #597062;
 }
 .prescription-controls select,
-.center-search input {
+.center-search input,
+.center-search select {
   display: block;
   min-width: 180px;
   margin-top: 6px;
@@ -1676,6 +1829,24 @@ textarea:focus-visible {
   border-radius: 8px;
   background: white;
   color: #294332;
+}
+.center-search label {
+  flex: 1 1 180px;
+}
+.center-search .center-keyword-field {
+  flex-grow: 1.4;
+}
+.center-search input,
+.center-search select {
+  width: 100%;
+}
+.center-search select:disabled {
+  color: #9aa69d;
+  background: #f4f6f3;
+}
+.center-search > .button {
+  align-self: flex-end;
+  margin-bottom: 0;
 }
 .prescription-grid,
 .center-grid {
@@ -2982,6 +3153,16 @@ textarea:focus-visible {
     right: 1%;
     width: 40%;
   }
+  .hero-home-calendar {
+    left: auto;
+    right: calc(3% + 316px);
+    width: 300px;
+    transform: translateY(-50%);
+  }
+  .hero-schedule-detail {
+    right: 3%;
+    width: 300px;
+  }
   .hero-orbit.orbit-three {
     left: -10%;
   }
@@ -3030,7 +3211,7 @@ textarea:focus-visible {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
   .hero-art {
-    opacity: 0.7;
+    opacity: 0.18;
   }
   .facility-grid {
     grid-template-columns: 1fr 1fr;
@@ -3106,10 +3287,37 @@ textarea:focus-visible {
     padding: 8px 9px;
   }
   .hero-art {
-    opacity: 0.45;
+    opacity: 0.16;
   }
   .hero {
+    min-height: 650px;
     padding: 30px;
+    align-items: flex-start;
+  }
+  .hero-content {
+    max-width: 100%;
+  }
+  .hero-home-calendar {
+    top: auto;
+    right: 30px;
+    bottom: 24px;
+    left: 30px;
+    width: auto;
+    transform: none;
+  }
+  .hero:has(.hero-schedule-detail) {
+    min-height: 980px;
+  }
+  .hero:has(.hero-schedule-detail) .hero-home-calendar {
+    bottom: 348px;
+  }
+  .hero-schedule-detail {
+    top: auto;
+    right: 30px;
+    bottom: 24px;
+    left: 30px;
+    width: auto;
+    transform: none;
   }
   .hero-counter {
     display: none;
@@ -3166,7 +3374,7 @@ textarea:focus-visible {
     font-size: 14px;
   }
   .hero {
-    min-height: 355px;
+    min-height: 670px;
     padding: 25px;
   }
   .hero h1 {
@@ -3174,6 +3382,20 @@ textarea:focus-visible {
   }
   .hero-art {
     display: none;
+  }
+  .hero-home-calendar {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    padding: 14px;
+  }
+  .hero:has(.hero-schedule-detail) .hero-home-calendar {
+    bottom: 340px;
+  }
+  .hero-schedule-detail {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
   }
   .hero p {
     font-size: 15px;

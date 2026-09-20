@@ -32,4 +32,25 @@ class FitnessCatalogControllerTest {
         .allMatch(row -> !row.path("phone").asText().isBlank())
     );
   }
+
+  /** 붙어 있는 시군구 자료를 계층형 지역으로 나눠 조회하는지 검증한다. */
+  @Test
+  void filtersCentersByHierarchicalRegion() throws IOException {
+    FitnessCatalogController controller = new FitnessCatalogController(
+      new ObjectMapper()
+    );
+
+    assertTrue(
+      controller
+        .centerRegions()
+        .stream()
+        .anyMatch(
+          region ->
+            region.province().equals("경기도") &&
+            region.city().equals("수원시") &&
+            region.locality().equals("영통구")
+        )
+    );
+    assertFalse(controller.centers("", "경기도", "수원시", "영통구").isEmpty());
+  }
 }
