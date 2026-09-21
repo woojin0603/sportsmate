@@ -42,6 +42,8 @@ import {
   X,
 } from "lucide-react";
 import { api, json, query, resetCsrf } from "./api";
+import PhoneVerificationField from "./PhoneVerificationField";
+import EmailVerificationField from "./EmailVerificationField";
 import FitnessPage from "./FitnessPage.jsx";
 import AdminPage from "./AdminPage.jsx";
 import { formatPhone } from "./phone";
@@ -696,7 +698,9 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
     if (dayPart.includes("매일")) return new Set([0, 1, 2, 3, 4, 5, 6]);
     if (dayPart.includes("평일")) return new Set([1, 2, 3, 4, 5]);
     if (dayPart.includes("주말")) return new Set([0, 6]);
-    const range = dayPart.match(/([월화수목금토일])\s*[~～\-]\s*([월화수목금토일])/);
+    const range = dayPart.match(
+      /([월화수목금토일])\s*[~～\-]\s*([월화수목금토일])/,
+    );
     if (range) {
       const result = new Set();
       let current = weekdayNumbers[range[1]];
@@ -3067,77 +3071,23 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailRequestToken, setEmailRequestToken] = useState("");
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
-  const [emailBusy, setEmailBusy] = useState(false);
-  const [emailMessage, setEmailMessage] = useState("");
+  const [phoneVerification, setPhoneVerification] = useState(null);
   const update = (event) => {
-    if (event.target.name === "email") {
-      setEmailSent(false);
-      setEmailRequestToken("");
-      setEmailVerificationToken("");
-      setEmailMessage("");
-    }
     setForm((previous) => ({
       ...previous,
       [event.target.name]: event.target.value,
     }));
   };
 
-  // 입력한 주소로 버튼 방식의 인증 메일 발송을 요청한다.
-  async function sendEmailCode() {
-    setEmailBusy(true);
-    setError("");
-    setEmailMessage("");
-    try {
-      const result = await api("/api/users/email/send", {
-        method: "POST",
-        body: json({ email: form.email }),
-      });
-      setEmailSent(true);
-      setEmailRequestToken(result.requestToken);
-      setEmailVerificationToken("");
-      setEmailMessage(
-        "인증 메일을 보냈습니다. 메일 안의 인증 버튼을 눌러 주세요.",
-      );
-    } catch (caught) {
-      setError(caught.message);
-    } finally {
-      setEmailBusy(false);
-    }
-  }
-
-  // 메일의 버튼 클릭 여부를 주기적으로 확인해 회원가입을 활성화한다.
-  useEffect(() => {
-    if (!emailSent || !emailRequestToken || emailVerificationToken) return;
-    let active = true;
-    const check = async () => {
-      try {
-        const result = await api("/api/users/email/status", {
-          method: "POST",
-          body: json({ email: form.email, requestToken: emailRequestToken }),
-        });
-        if (active && result.verified) {
-          setEmailVerificationToken(result.verificationToken);
-          setEmailMessage("이메일 인증이 완료됐습니다.");
-        }
-      } catch (caught) {
-        if (active && caught.status !== 429) setError(caught.message);
-      }
-    };
-    check();
-    const timer = window.setInterval(check, 2500);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [emailSent, emailRequestToken, emailVerificationToken, form.email]);
-
   async function submit(event) {
     event.preventDefault();
     if (mode === "signup" && !emailVerificationToken) {
       setError("이메일 인증을 완료해 주세요.");
+      return;
+    }
+    if (mode === "signup" && !phoneVerification) {
+      setError("휴대폰 인증을 완료해 주세요.");
       return;
     }
     setBusy(true);
@@ -3146,9 +3096,16 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
       if (mode === "signup") {
         await api("/api/users/signup", {
           method: "POST",
-          body: json({ ...form, emailVerificationToken }),
+          body: json({
+            ...form,
+            emailVerificationToken,
+            phoneRequestToken: phoneVerification.requestToken,
+            phoneVerificationToken: phoneVerification.verificationToken,
+          }),
         });
         notify("회원가입이 완료됐습니다. 로그인해 주세요.");
+        setEmailVerificationToken("");
+        setPhoneVerification(null);
         setMode("login");
       } else {
         const user = await api("/api/users/login", {
@@ -3273,46 +3230,20 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
                   </select>
                 </label>
               </div>
-              <label>
-                이메일
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={update}
-                  required
-                  type="email"
-                  placeholder="name@example.com"
-                />
-              </label>
-              <button
-                className="email-action"
-                type="button"
-                disabled={
-                  emailBusy ||
-                  !form.email ||
-                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+              <EmailVerificationField
+                value={form.email}
+                onChange={(email) =>
+                  setForm((previous) => ({ ...previous, email }))
                 }
-                onClick={sendEmailCode}
-              >
-                {emailBusy
-                  ? "처리 중..."
-                  : emailSent
-                    ? "인증 메일 다시 보내기"
-                    : "이메일 인증하기"}
-              </button>
-              {emailMessage && (
-                <small className="email-status">{emailMessage}</small>
-              )}
-              <label>
-                전화번호
-                <input
-                  name="phoneNumber"
-                  value={form.phoneNumber}
-                  onChange={update}
-                  required
-                  placeholder="010-1234-5678"
-                />
-              </label>
+                onVerified={setEmailVerificationToken}
+              />
+              <PhoneVerificationField
+                value={form.phoneNumber}
+                onChange={(phoneNumber) =>
+                  setForm((previous) => ({ ...previous, phoneNumber }))
+                }
+                onVerified={setPhoneVerification}
+              />
             </>
           )}
           {error && <div className="form-error">{error}</div>}
@@ -3325,6 +3256,8 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           {mode === "login" ? "처음 오셨나요?" : "이미 계정이 있나요?"}{" "}
           <button
             onClick={() => {
+              setEmailVerificationToken("");
+              setPhoneVerification(null);
               setMode(mode === "login" ? "signup" : "login");
               setError("");
             }}

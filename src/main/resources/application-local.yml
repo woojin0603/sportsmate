@@ -10,6 +10,10 @@ spring:
     console:
       enabled: false
 app:
+  mail:
+    mode: ${EMAIL_MODE:mock}
+  sms:
+    mode: ${SMS_MODE:mock}
   auth:
     secure-cookie: false
   demo:

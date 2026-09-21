@@ -1,7 +1,6 @@
 package kr.or.sportmap.member.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,15 +10,10 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
 import kr.or.sportmap.member.domain.EmailVerification;
+import kr.or.sportmap.member.mail.EmailGateway;
 import kr.or.sportmap.member.repository.EmailVerificationRepository;
 import kr.or.sportmap.member.repository.MemberRepository;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.MailAuthenticationException;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,40 +28,27 @@ public class EmailVerificationService {
   private final EmailVerificationRepository verifications;
   private final MemberRepository members;
   private final PasswordEncoder passwords;
-  private final ObjectProvider<JavaMailSender> mailSenders;
-  private final String mailHost;
-  private final String from;
+  private final EmailGateway gateway;
 
   public EmailVerificationService(
     EmailVerificationRepository verifications,
     MemberRepository members,
     PasswordEncoder passwords,
-    ObjectProvider<JavaMailSender> mailSenders,
-    @Value("${spring.mail.host:}") String mailHost,
-    @Value("${app.mail.from:}") String from
+    EmailGateway gateway
   ) {
     this.verifications = verifications;
     this.members = members;
     this.passwords = passwords;
-    this.mailSenders = mailSenders;
-    this.mailHost = mailHost;
-    this.from = from;
+    this.gateway = gateway;
   }
 
   /** 인증 버튼이 포함된 HTML 메일을 발송하고 화면 확인용 요청 키를 반환한다. */
   @Transactional
-  public String sendLink(String address, String confirmationBaseUrl) {
+  public SendResult sendLink(String address) {
     String email = normalize(address);
     if (members.existsByEmail(email)) throw new ResponseStatusException(
       HttpStatus.CONFLICT,
       "이미 가입된 이메일입니다"
-    );
-    JavaMailSender sender = mailSenders.getIfAvailable();
-    if (
-      mailHost.isBlank() || from.isBlank() || sender == null
-    ) throw new ResponseStatusException(
-      HttpStatus.SERVICE_UNAVAILABLE,
-      "이메일 발송 설정이 필요합니다. 관리자에게 문의해 주세요"
     );
     EmailVerification verification = verifications
       .findByEmailForUpdate(email)
@@ -82,38 +63,9 @@ public class EmailVerificationService {
     );
     String confirmationToken = UUID.randomUUID().toString();
     String requestToken = UUID.randomUUID().toString();
-    String confirmationUrl =
-      confirmationBaseUrl + "?token=" + confirmationToken;
-    try {
-      MimeMessage message = sender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(
-        message,
-        false,
-        StandardCharsets.UTF_8.name()
-      );
-      helper.setFrom(from);
-      helper.setTo(email);
-      helper.setSubject("[SportMap] 회원가입 이메일 인증");
-      helper.setText(
-        "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#173e32\"><h2>SportMap 이메일 인증</h2><p>아래 버튼을 눌러 이메일 인증을 완료해 주세요.</p><a href=\"" +
-          confirmationUrl +
-          "\" style=\"display:inline-block;margin:20px 0;padding:14px 24px;background:#173e32;color:white;text-decoration:none;border-radius:10px;font-weight:bold\">이메일 인증 완료</a><p style=\"color:#66766d;font-size:14px\">이 링크는 10분 동안 유효합니다. 요청하지 않았다면 이 메일을 무시하세요.</p></div>",
-        true
-      );
-      sender.send(message);
-    } catch (MailAuthenticationException error) {
-      throw new ResponseStatusException(
-        HttpStatus.SERVICE_UNAVAILABLE,
-        "Gmail 앱 비밀번호가 올바르지 않습니다. SMTP 설정을 다시 확인해 주세요",
-        error
-      );
-    } catch (MailException | MessagingException error) {
-      throw new ResponseStatusException(
-        HttpStatus.SERVICE_UNAVAILABLE,
-        "인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요",
-        error
-      );
-    }
+    String confirmationUrl = gateway.confirmationUrl(confirmationToken);
+    gateway.send(email, confirmationUrl);
+    verification.mockDelivery = gateway.isMock();
     verification.codeHash = null;
     verification.tokenHash = null;
     verification.requestHash = passwords.encode(requestToken);
@@ -123,7 +75,13 @@ public class EmailVerificationService {
     verification.verifiedAt = null;
     verification.failedAttempts = 0;
     verifications.save(verification);
-    return requestToken;
+    return new SendResult(
+      requestToken,
+      verification.expiresAt,
+      60,
+      gateway.isMock(),
+      gateway.isMock() ? confirmationUrl : null
+    );
   }
 
   /** 메일의 인증 버튼 토큰을 확인해 이메일을 인증 완료 상태로 바꾼다. */
@@ -144,6 +102,7 @@ public class EmailVerificationService {
       HttpStatus.BAD_REQUEST,
       "인증 링크가 만료됐습니다. 회원가입 화면에서 다시 발송해 주세요"
     );
+    requireMatchingMode(verification);
     verification.verifiedAt = Instant.now();
     verification.confirmationHash = null;
   }
@@ -161,6 +120,7 @@ public class EmailVerificationService {
       );
     if (
       verification.requestHash == null ||
+      requestToken == null ||
       !passwords.matches(requestToken, verification.requestHash)
     ) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
@@ -173,12 +133,15 @@ public class EmailVerificationService {
       HttpStatus.BAD_REQUEST,
       "인증 링크가 만료됐습니다. 다시 발송해 주세요"
     );
+    requireMatchingMode(verification);
     if (verification.verifiedAt == null) return new VerificationStatus(
       false,
       null
     );
-    String signupToken = UUID.randomUUID().toString();
-    verification.tokenHash = passwords.encode(signupToken);
+    // Stable across repeated status checks; concurrent polling cannot invalidate a returned proof.
+    String signupToken = sha256("email-signup:" + requestToken);
+    if (verification.tokenHash == null) verification.tokenHash =
+      passwords.encode(signupToken);
     return new VerificationStatus(true, signupToken);
   }
 
@@ -205,8 +168,30 @@ public class EmailVerificationService {
       HttpStatus.BAD_REQUEST,
       "이메일 인증을 다시 진행해 주세요"
     );
+    requireMatchingMode(verification);
     verifications.delete(verification);
   }
+
+  private void requireMatchingMode(EmailVerification verification) {
+    if (
+      verification.mockDelivery == null ||
+      verification.mockDelivery != gateway.isMock()
+    ) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "발송 모드가 변경됐습니다. 이메일 인증을 다시 진행해 주세요"
+      );
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record SendResult(
+    String requestToken,
+    Instant expiresAt,
+    int retryAfterSeconds,
+    boolean mock,
+    String developmentConfirmationUrl
+  ) {}
 
   private String normalize(String address) {
     return address.trim().toLowerCase(Locale.ROOT);

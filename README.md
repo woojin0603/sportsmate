@@ -1,5 +1,7 @@
 # SportMap — 공공 체육시설 탐색 서비스
 
+회원가입에 휴대폰 인증을 추가했습니다. 로컬에서는 실제 SMS 대신 화면의 테스트용 인증번호로 진행합니다. 시연 방법, 보안 제한, 실제 문자 서비스 교체 방법은 [SMS 인증 안내](docs/SMS_VERIFICATION.md)를 참고하세요. 이메일도 로컬에서는 실제 발송 없이 테스트 링크로 인증합니다. 메일 계정 없이 가입 전체를 시연할 수 있으며 [이메일 인증 안내](docs/EMAIL_VERIFICATION.md)에 실제 SMTP 전환 방법을 정리했습니다.
+
 React + Vite 화면은 [frontend/README.md](frontend/README.md)에 실행법과 화면별 API 연결을 정리했습니다. 개발 중에는 Spring Boot 실행 후 `frontend`에서 `npm run dev`를 실행할 수 있습니다. Spring Boot 하나로 화면까지 제공하려면 `frontend`에서 `npm run build:spring`을 실행하고 Spring Boot를 재시작하세요. Vite 산출물 폴더는 `build`가 아니라 `dist`입니다. `http://127.0.0.1:8080/`에서 화면을 확인하고, 직접 입력한 `/programs` 같은 주소도 새로고침되는지 확인할 수 있습니다.
 
 국민체력100 PDF 업로드와 A~D 참고 평가는 [docs/FITNESS_ASSESSMENT.md](docs/FITNESS_ASSESSMENT.md)에 기준·API·OCR 설치 조건을 정리했습니다. 백엔드를 다시 실행해야 새 API와 `age` 응답 필드가 적용됩니다.
@@ -12,13 +14,15 @@ Windows에서 스캔본 PDF를 시험하려면 프로젝트 루트에서 `python
 
 Java 17, Spring Boot 3.3, JPA, Querydsl, H2/MySQL 기반 시작 프로젝트입니다. `build.gradle`을 IntelliJ의 Gradle 프로젝트로 열 수 있습니다.
 
-회원가입에는 이메일 인증이 필요합니다. 실행 전에 서버의 SMTP 설정을 환경변수로 지정하세요. 사용자는 메일의 **이메일 인증 완료** 버튼을 눌러 인증하며, 원래 회원가입 화면이 완료 상태를 자동 확인합니다. 메일 계정의 비밀번호는 저장소나 React 코드에 넣지 않습니다. SMTP 설정이 없으면 발송 API는 503을 반환하며 회원가입은 진행되지 않습니다.
+회원가입에는 이메일 인증이 필요합니다. 기본 로컬 모드에서는 SMTP 설정 없이 **테스트용 이메일 인증 링크 열기**로 인증할 수 있습니다. 실제 메일을 보내려면 `EMAIL_MODE=live`와 공개 HTTPS 주소 `MAIL_PUBLIC_BASE_URL`, 아래 SMTP 환경변수를 설정하세요. 원래 회원가입 화면이 인증 완료 상태를 자동 확인합니다. 실제 모드에서 SMTP 설정이 없으면 발송 API는 503을 반환합니다. 메일 계정의 비밀번호는 저장소나 React 코드에 넣지 않습니다.
 
 로컬 IntelliJ 실행에서는 [`config/local-secrets.properties.example`](config/local-secrets.properties.example)을 참고해 Git에서 제외된 `config/local-secrets.properties`에 같은 항목을 추가할 수도 있습니다. Gmail은 일반 로그인 비밀번호가 아니라 Google 계정의 2단계 인증에서 발급한 앱 비밀번호를 사용해야 합니다.
 
 Windows에서는 프로젝트 루트에서 `powershell -ExecutionPolicy Bypass -File tools/configure_gmail.ps1`을 실행하면 Gmail 주소와 앱 비밀번호를 화면에 노출하지 않고 입력할 수 있습니다. 설정 후 Spring Boot를 완전히 재시작해야 합니다.
 
 ```powershell
+$env:EMAIL_MODE='live'
+$env:MAIL_PUBLIC_BASE_URL='https://실제서비스도메인'
 $env:MAIL_HOST='smtp.example.com'
 $env:MAIL_PORT='587'
 $env:MAIL_USERNAME='메일 계정'
@@ -26,7 +30,7 @@ $env:MAIL_PASSWORD='SMTP 비밀번호 또는 앱 비밀번호'
 $env:MAIL_FROM='noreply@example.com'
 ```
 
-가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 6자리 번호가 발송됩니다. 받은 번호를 10분 안에 확인한 뒤 회원가입할 수 있습니다. 재발송은 1분 뒤 가능하고, 번호 확인은 최대 5회 시도할 수 있습니다. 기존 데모 계정의 로그인에는 영향을 주지 않습니다.
+가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 로컬 모드에서는 테스트 링크가 표시되고 실제 모드에서는 메일이 발송됩니다. 메일의 인증 버튼을 발송 후 10분 안에 누르고 휴대폰 인증까지 완료한 뒤 회원가입할 수 있습니다. 이메일 재발송은 1분 뒤 가능합니다. 기존 데모 계정의 로그인에는 영향을 주지 않습니다.
 
 로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 파일에서 추린 실제 프로그램 240건과 해당 시설이 자동 적재됩니다. 테스트 회원·게시글 및 자체 예약 예시도 함께 생성됩니다. 화면별 테스트 주소와 로그인 계정은 [docs/DEMO_DATA.md](docs/DEMO_DATA.md)에 있습니다. 로컬 H2는 프로젝트 루트의 `sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다. 기존 메모리 H2에만 있던 회원은 파일 DB로 이전되지 않으므로 한 번 다시 가입해야 합니다.
 
@@ -102,6 +106,9 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
   "birthDate": "1998-05-10",
   "email": "hong@example.com",
   "phoneNumber": "010-1234-5678",
+  "emailVerificationToken": "이메일 인증 후 받은 가입 토큰",
+  "phoneRequestToken": "휴대폰 인증번호 요청 토큰",
+  "phoneVerificationToken": "휴대폰 인증 후 받은 가입 토큰",
   "gender": "MALE"
 }
 ```

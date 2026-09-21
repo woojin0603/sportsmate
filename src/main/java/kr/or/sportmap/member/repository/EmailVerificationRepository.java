@@ -20,5 +20,6 @@ public interface EmailVerificationRepository
     @Param("email") String email
   );
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<EmailVerification> findByConfirmationHash(String confirmationHash);
 }

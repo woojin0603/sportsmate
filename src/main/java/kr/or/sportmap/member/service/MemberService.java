@@ -26,17 +26,20 @@ public class MemberService {
   private final PasswordEncoder passwords;
   private final JwtEncoder jwtEncoder;
   private final EmailVerificationService emailVerifications;
+  private final PhoneVerificationService phoneVerifications;
 
   public MemberService(
     MemberRepository repository,
     PasswordEncoder passwords,
     JwtEncoder jwtEncoder,
-    EmailVerificationService emailVerifications
+    EmailVerificationService emailVerifications,
+    PhoneVerificationService phoneVerifications
   ) {
     this.repository = repository;
     this.passwords = passwords;
     this.jwtEncoder = jwtEncoder;
     this.emailVerifications = emailVerifications;
+    this.phoneVerifications = phoneVerifications;
   }
 
   @Transactional
@@ -48,6 +51,8 @@ public class MemberService {
     String email,
     String emailVerificationToken,
     String phoneNumber,
+    String phoneRequestToken,
+    String phoneVerificationToken,
     Member.Gender gender
   ) {
     String normalizedUsername = username.trim();
@@ -58,7 +63,7 @@ public class MemberService {
       "예약된 아이디입니다"
     );
     String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-    String normalizedPhone = phoneNumber.replaceAll("[^0-9]", "");
+    String normalizedPhone = PhoneVerificationService.normalize(phoneNumber);
     if (
       normalizedPhone.length() < 10 || normalizedPhone.length() > 11
     ) throw new ResponseStatusException(
@@ -82,6 +87,11 @@ public class MemberService {
     ) throw new ResponseStatusException(
       HttpStatus.CONFLICT,
       "이미 사용 중인 이메일입니다"
+    );
+    phoneVerifications.consume(
+      normalizedPhone,
+      phoneRequestToken,
+      phoneVerificationToken
     );
     emailVerifications.consume(normalizedEmail, emailVerificationToken);
     try {

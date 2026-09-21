@@ -34,7 +34,12 @@ server:
   error:
     include-message: always
 app:
+  sms:
+    mode: ${SMS_MODE:disabled}
+    daily-limit: ${SMS_DAILY_LIMIT:100}
   mail:
+    mode: ${EMAIL_MODE:disabled}
+    public-base-url: ${MAIL_PUBLIC_BASE_URL:}
     from: ${MAIL_FROM:}
   auth:
     jwt-secret: ${JWT_SECRET:}

@@ -35,6 +35,9 @@ public class EmailVerification {
   public Instant verifiedAt;
   public int failedAttempts;
 
+  // Null legacy records require a new verification after this upgrade.
+  public Boolean mockDelivery;
+
   protected EmailVerification() {}
 
   public EmailVerification(String email) {
