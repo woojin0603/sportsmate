@@ -78,6 +78,8 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
 
 조회: `GET /api/facilities?keyword=수영&regionCode=...&publicOnly=true`, `GET /api/facilities/{id}`, `GET /api/programs?facilityId=1`, `GET /api/recommendations?age=30`.
 
+맞춤 운동은 로그인한 회원의 만 나이로 자동 조회합니다. 상단의 **다른 연령대 추천운동 보기**를 누르면 나이·BMI·성별·체력 등급을 직접 선택할 수 있고, **내 나이 기준으로 보기**로 기본 추천에 돌아갈 수 있습니다. 비로그인 상태에서는 기존 조건 선택창을 표시합니다. BMI·체력 등급은 회원 정보에 없으므로 기본 조건임을 안내합니다.
+
 연령별 운동정보 CSV 5,040건은 `src/main/resources/age-exercise-recommendations.json`에 포함했습니다. 서버 첫 실행 시 `exercise_recommendations`에 한 번 적재하며, `/recommendations` 화면에서 연령·BMI 분류·성별·체력 등급을 선택하면 준비운동→본운동→마무리운동 순으로 각 단계 5개씩 표시합니다. API 예시: `GET /api/recommendations?age=30&bmi=정상&sex=F&grade=참가증`. CSV의 `COAW_FLAG_NM` 값(1·2·3등급, 참가증)을 그대로 사용하며, PDF 평가의 A~D 등급과 동일한 척도로 간주하지 않습니다. 원본에 10대 미만 추천은 없고 `70대 이상`은 조회 상한인 120세까지 적용했습니다.
 
 추가 제공된 체력측정 운동처방 JSON은 `tools/build_fitness_prescriptions.mjs`로 익명 집계했습니다. 일반 처방(2026년 3~7월), 장애인 처방(2025년 8~12월), 지역 체력측정 처방(2026년 7월 배포본)을 각각 분리합니다. 지역 데이터의 2025년 7월·2026년 2월 파일은 7월 배포본과 시작 기록이 겹치는 누적 스냅샷이므로 중복 집계를 피하려고 최신 배포본만 집계했습니다. 원본의 회원 식별자·개별 검사 수치·측정일은 프로젝트에 넣지 않았고, 연령대·성별·공식 등급·장애 유형별로 **같은 처방이 5건 이상인 경우** 빈도 상위 사례만 `src/main/resources/fitness-prescription-catalog.json`에 보관합니다. `/recommendations` 화면의 처방 사례는 통계적 참고자료이며 개인별 처방이나 PDF 평가의 A~D 등급과 직접 연결하지 않습니다. `GET /api/fitness/prescriptions?age=30&source=GENERAL&sex=F`로 조회할 수 있습니다.

@@ -2072,23 +2072,33 @@ function ProgramDetailPage({ id, navigate, onApply }) {
   );
 }
 
-// 입력한 연령에 맞는 추천 운동을 조회한다.
-function RecommendationsPage() {
-  const [age, setAge] = useState(30);
-  const [bmi, setBmi] = useState("정상");
-  const [sex, setSex] = useState("F");
-  const [grade, setGrade] = useState("참가증");
-  const [filters, setFilters] = useState({
-    age: 30,
+// 로그인한 회원의 나이로 시작하고, 필요할 때 다른 추천 조건을 펼친다.
+function RecommendationsPage({ user }) {
+  const profileAge =
+    Number.isInteger(user?.age) && user.age >= 0 && user.age <= 120
+      ? user.age
+      : 30;
+  const profileSex = user?.gender === "MALE" ? "M" : "F";
+  const defaults = {
+    age: profileAge,
     bmi: "정상",
-    sex: "F",
+    sex: profileSex,
     grade: "참가증",
-  });
+  };
+  const [showFilters, setShowFilters] = useState(!user);
+  const [age, setAge] = useState(profileAge);
+  const [bmi, setBmi] = useState(defaults.bmi);
+  const [sex, setSex] = useState(profileSex);
+  const [grade, setGrade] = useState(defaults.grade);
+  const [filters, setFilters] = useState(defaults);
+  const hasCustomFilters = Object.keys(defaults).some(
+    (key) => filters[key] !== defaults[key],
+  );
   const recommendations = useRemote(
     `/api/recommendations?${new URLSearchParams(filters)}`,
   );
   const [catalogSource, setCatalogSource] = useState("GENERAL");
-  const [catalogSex, setCatalogSex] = useState("F");
+  const [catalogSex, setCatalogSex] = useState(profileSex);
   const [catalogGrade, setCatalogGrade] = useState("");
   const [disabilityType, setDisabilityType] = useState("지적장애");
   const prescriptions = useRemote(
@@ -2102,6 +2112,15 @@ function RecommendationsPage() {
       sex,
       grade,
     });
+  };
+  const resetToProfile = () => {
+    setAge(profileAge);
+    setBmi(defaults.bmi);
+    setSex(profileSex);
+    setGrade(defaults.grade);
+    setFilters(defaults);
+    setCatalogSex(profileSex);
+    setShowFilters(false);
   };
   return (
     <>
@@ -2134,68 +2153,115 @@ function RecommendationsPage() {
           title="나에게 추천하는 운동"
           subtitle="연령·BMI 분류·성별·체력 등급에 맞는 준비, 본, 마무리 운동을 보여드려요."
         />
-        <form className="age-form" onSubmit={submit}>
-          <label>
-            나의 나이{" "}
-            <div>
-              <input
-                type="number"
-                min="0"
-                max="120"
-                value={age}
-                onChange={(event) => setAge(event.target.value)}
-                aria-label="나이"
-              />
-              <span>세</span>
-            </div>
-          </label>
-          <label>
-            BMI 분류
-            <select
-              value={bmi}
-              onChange={(event) => setBmi(event.target.value)}
+        <div className="recommend-filter-toolbar">
+          <div className="recommend-filter-summary">
+            <h3>
+              {user ? `${user.fullName}님의 맞춤 운동 추천` : "맞춤 운동 추천"}
+            </h3>
+            <p className="recommend-filter-details">
+              <span>만 {filters.age}세</span>
+              <span>BMI {filters.bmi}</span>
+              <span>{filters.sex === "M" ? "남성" : "여성"}</span>
+              <span>체력 등급 {filters.grade}</span>
+            </p>
+            {user && !hasCustomFilters && (
+              <small>
+                BMI와 체력 등급은 기본 조건입니다. 필요하면 추천 조건을 변경해
+                주세요.
+              </small>
+            )}
+          </div>
+          <div className="recommend-filter-actions">
+            {user && hasCustomFilters && (
+              <button
+                type="button"
+                className="recommend-filter-toggle"
+                onClick={resetToProfile}
+              >
+                내 나이 기준으로 보기
+              </button>
+            )}
+            <button
+              type="button"
+              className="recommend-filter-toggle"
+              aria-expanded={showFilters}
+              aria-controls="recommendation-filters"
+              onClick={() => setShowFilters((open) => !open)}
             >
-              {[
-                "저체중",
-                "정상",
-                "비만전단계비만",
-                "1단계비만",
-                "2단계비만",
-                "3단계비만",
-              ].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            성별
-            <select
-              value={sex}
-              onChange={(event) => setSex(event.target.value)}
-            >
-              <option value="F">여성</option>
-              <option value="M">남성</option>
-            </select>
-          </label>
-          <label>
-            체력 등급
-            <select
-              value={grade}
-              onChange={(event) => setGrade(event.target.value)}
-            >
-              {["1등급", "2등급", "3등급", "참가증"].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="button button-dark">
-            추천 보기 <ArrowRight size={17} />
-          </button>
-        </form>
+              {showFilters ? "추천 조건 접기" : "다른 연령대 추천운동 보기"}
+            </button>
+          </div>
+        </div>
+        {showFilters && (
+          <form
+            id="recommendation-filters"
+            className="age-form"
+            onSubmit={submit}
+          >
+            <label>
+              조회할 나이{" "}
+              <div>
+                <input
+                  type="number"
+                  required
+                  step="1"
+                  min="0"
+                  max="120"
+                  value={age}
+                  onChange={(event) => setAge(event.target.value)}
+                  aria-label="나이"
+                />
+                <span>세</span>
+              </div>
+            </label>
+            <label>
+              BMI 분류
+              <select
+                value={bmi}
+                onChange={(event) => setBmi(event.target.value)}
+              >
+                {[
+                  "저체중",
+                  "정상",
+                  "비만전단계비만",
+                  "1단계비만",
+                  "2단계비만",
+                  "3단계비만",
+                ].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              성별
+              <select
+                value={sex}
+                onChange={(event) => setSex(event.target.value)}
+              >
+                <option value="F">여성</option>
+                <option value="M">남성</option>
+              </select>
+            </label>
+            <label>
+              체력 등급
+              <select
+                value={grade}
+                onChange={(event) => setGrade(event.target.value)}
+              >
+                {["1등급", "2등급", "3등급", "참가증"].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button button-dark">
+              추천 보기 <ArrowRight size={17} />
+            </button>
+          </form>
+        )}
         {recommendations.loading ? (
           <LoadingCards count={2} />
         ) : recommendations.error ? (
@@ -2233,7 +2299,7 @@ function RecommendationsPage() {
           <Empty
             icon={HeartPulse}
             title="추천 운동이 아직 없어요"
-            description="다른 나이를 입력하거나 추천 운동 데이터를 적재해 주세요."
+            description="해당 조건의 추천 데이터가 없습니다. 다른 연령대 추천운동 보기에서 조건을 변경해 주세요."
           />
         )}
       </section>
@@ -3357,6 +3423,7 @@ function BookingModal({ program, close, notify, onBooked }) {
 export default function App() {
   const [path, navigate] = useRoute();
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [booking, setBooking] = useState(null);
@@ -3369,7 +3436,8 @@ export default function App() {
   useEffect(() => {
     api("/api/users/mypage")
       .then(setUser)
-      .catch(() => setUser(null));
+      .catch(() => setUser(null))
+      .finally(() => setAuthLoading(false));
   }, []);
   useEffect(() => {
     if (!toast) return;
@@ -3444,7 +3512,17 @@ export default function App() {
     content = <LiveFacilitiesPage navigate={navigate} />;
   else if (path === "/programs")
     content = <ProgramsPage navigate={navigate} onApply={onApply} />;
-  else if (path === "/recommendations") content = <RecommendationsPage />;
+  else if (path === "/recommendations")
+    content = authLoading ? (
+      <section className="page-section">
+        <LoadingCards count={2} />
+      </section>
+    ) : (
+      <RecommendationsPage
+        key={`${user?.id ?? "guest"}:${user?.age ?? ""}:${user?.gender ?? ""}`}
+        user={user}
+      />
+    );
   else if (path === "/fitness")
     content = (
       <FitnessPage
