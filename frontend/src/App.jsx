@@ -694,12 +694,15 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
   const weekdayNumbers = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 };
   // '월수금 / 19:00~19:50' 형식에서 실제 운영 요일만 추출한다.
   const operatingWeekdays = (scheduleText) => {
-    const dayPart = String(scheduleText || "").split("/")[0];
+    const dayPart = String(scheduleText || "")
+      .split("/")[0]
+      .trim()
+      .replace(/^매주\s*/, "");
     if (dayPart.includes("매일")) return new Set([0, 1, 2, 3, 4, 5, 6]);
     if (dayPart.includes("평일")) return new Set([1, 2, 3, 4, 5]);
     if (dayPart.includes("주말")) return new Set([0, 6]);
     const range = dayPart.match(
-      /([월화수목금토일])\s*[~～\-]\s*([월화수목금토일])/,
+      /^([월화수목금토일])\s*[~～\-]\s*([월화수목금토일])$/,
     );
     if (range) {
       const result = new Set();
@@ -712,8 +715,10 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
       }
       return result;
     }
+    const listedDays = dayPart.replace(/[\s,·ㆍ]/g, "");
+    if (!/^[월화수목금토일]+$/.test(listedDays)) return new Set();
     return new Set(
-      [...dayPart]
+      [...listedDays]
         .filter((letter) => weekdayNumbers[letter] != null)
         .map((letter) => weekdayNumbers[letter]),
     );
@@ -2754,7 +2759,7 @@ function CommunityPage({ navigate, user, openAuth, notify }) {
   const posts = useRemote(`/api/${tab}?page=${page}&size=10&r=${refresh}`);
   async function create(event) {
     event.preventDefault();
-    if (!user) return openAuth();
+    if (user?.role !== "ADMIN") return;
     try {
       const created = await api("/api/qna", {
         method: "POST",
@@ -2974,21 +2979,21 @@ function CommunityDetailPage({ kind, id, navigate, user, openAuth, notify }) {
                   <small>{shortDate(comment.createdAt)}</small>
                 </div>
                 <p>{comment.content}</p>
-                <button
+                {user?.role === "ADMIN" && <button
                   onClick={() => {
                     setReplyTo(comment.id);
                     document.getElementById("comment-input")?.focus();
                   }}
                 >
                   답글 달기
-                </button>
+                </button>}
               </div>
             </div>
           ))}
           {!comments.loading && !comments.data?.length && (
-            <p className="muted">첫 댓글을 남겨보세요.</p>
+            <p className="muted">아직 관리자 답변이 없습니다.</p>
           )}
-          <form className="comment-form" onSubmit={send}>
+          {user?.role === "ADMIN" && <form className="comment-form" onSubmit={send}>
             {replyTo && (
               <span className="reply-hint">
                 답글 작성 중{" "}
@@ -3012,7 +3017,7 @@ function CommunityDetailPage({ kind, id, navigate, user, openAuth, notify }) {
             <button className="button button-dark" disabled={!content.trim()}>
               <Send size={16} /> 댓글 등록
             </button>
-          </form>
+          </form>}
         </div>
       )}
     </>
@@ -3333,7 +3338,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
         </div>
         {mode === "login" && (
           <div className="demo-hint">
-            <Sparkles size={15} /> 로컬 데모: demo_user / Demo1234!
+          <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
           </div>
         )}
       </div>
@@ -3429,6 +3434,7 @@ export default function App() {
   const [booking, setBooking] = useState(null);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState(null);
+  const [siteSettings, setSiteSettings] = useState(null);
   const notify = useCallback(
     (message, tone = "success") => setToast({ message, tone, id: Date.now() }),
     [],
@@ -3439,6 +3445,12 @@ export default function App() {
       .catch(() => setUser(null))
       .finally(() => setAuthLoading(false));
   }, []);
+  useEffect(() => {
+    api("/api/site-settings").then(setSiteSettings).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (siteSettings?.siteTitle) document.title = siteSettings.siteTitle;
+  }, [siteSettings]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 4500);
@@ -3578,6 +3590,18 @@ export default function App() {
     );
   return (
     <div className="app-shell">
+      {path === "/admin" && user?.role === "ADMIN" ? (
+        <div className="admin-layout">
+          <header className="admin-header">
+            <strong>SportMap 운영 관리</strong>
+            <div>
+              <button onClick={() => navigate("/")}>사이트 보기</button>
+              <button onClick={onLogout}>로그아웃</button>
+            </div>
+          </header>
+          <main className="admin-main">{content}</main>
+        </div>
+      ) : <>
       <Sidebar
         path={path}
         navigate={navigate}
@@ -3604,6 +3628,7 @@ export default function App() {
           setMobileMenu={setMobileMenu}
         />
         <main className="main-content">
+          {siteSettings?.announcement && <div className="site-announcement" role="status">{siteSettings.announcement}</div>}
           {content}
           <footer className="footer">
             <span>
@@ -3615,6 +3640,7 @@ export default function App() {
           </footer>
         </main>
       </div>
+      </>}
       {authOpen && (
         <AuthModal
           initialMode={authMode}

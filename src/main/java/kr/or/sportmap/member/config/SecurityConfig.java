@@ -92,6 +92,7 @@ public class SecurityConfig {
       if (
         (!path.startsWith("/api/") && !path.startsWith("/h2-console/")) ||
         path.equals("/api/csrf") ||
+        path.equals("/api/site-settings") ||
         path.equals("/api/users/login") ||
         path.equals("/api/users/signup") ||
         path.equals("/api/users/phone/send") ||
@@ -174,6 +175,7 @@ public class SecurityConfig {
           "/api/fitness/centers",
           "/api/fitness/centers/**",
           "/api/notices/**",
+          "/api/site-settings",
           "/api/qna/**"
         )
         .permitAll()
@@ -191,6 +193,8 @@ public class SecurityConfig {
         .permitAll()
         .requestMatchers(HttpMethod.GET, "/api/users/email/confirm")
         .permitAll()
+        .requestMatchers(HttpMethod.POST, "/api/qna/*/comments")
+        .hasRole("ADMIN")
         .requestMatchers("/api/admin/**")
         .access((authentication, request) -> {
           if (

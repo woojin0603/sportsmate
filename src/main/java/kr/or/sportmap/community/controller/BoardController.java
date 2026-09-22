@@ -10,6 +10,7 @@ import kr.or.sportmap.community.repository.CommentRepository;
 import kr.or.sportmap.community.repository.NoticeRepository;
 import kr.or.sportmap.community.repository.QuestionRepository;
 import kr.or.sportmap.member.service.MemberService;
+import kr.or.sportmap.member.domain.Member;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -118,6 +119,11 @@ public class BoardController {
     @Valid @RequestBody CommentRequest request,
     @AuthenticationPrincipal Jwt jwt
   ) {
+    Member author = members.findAuthenticated(jwt.getSubject());
+    if (author.getRole() != Member.Role.ADMIN) throw new ResponseStatusException(
+      HttpStatus.FORBIDDEN,
+      "관리자만 댓글을 작성할 수 있습니다"
+    );
     Question q = questions
       .findById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -141,7 +147,7 @@ public class BoardController {
     Comment c = comments.save(
       new Comment(
         q,
-        members.findAuthenticated(jwt.getSubject()),
+        author,
         parent,
         request.content().trim()
       )

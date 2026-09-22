@@ -17,6 +17,6 @@ app:
   auth:
     secure-cookie: false
   demo:
-    enabled: true
+    enabled: false
 server:
   address: 127.0.0.1

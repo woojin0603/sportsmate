@@ -12,6 +12,7 @@ export default function AdminPage({ notify }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ id: null, title: "", content: "" });
+  const [settings, setSettings] = useState({ siteTitle: "SportMap", announcement: "" });
 
   // 현재 페이지에 필요한 관리 데이터만 다시 읽는다.
   useEffect(() => {
@@ -20,12 +21,14 @@ export default function AdminPage({ notify }) {
       api("/api/admin/overview"),
       api(`/api/admin/users?page=${page}&size=15`),
       api("/api/notices?page=0&size=50"),
+      api("/api/site-settings"),
     ])
-      .then(([summary, members, posts]) => {
+      .then(([summary, members, posts, site]) => {
         if (!active) return;
         setOverview(summary);
         setUsers(members);
         setNotices(posts);
+        setSettings(site);
         setError("");
       })
       .catch((failure) => {
@@ -49,6 +52,24 @@ export default function AdminPage({ notify }) {
       setRefresh((value) => value + 1);
     } catch (failure) {
       notify(failure.message, "error");
+    }
+  }
+
+  // 사이트의 공개 제목과 안내 문구를 저장한다.
+  async function saveSettings(event) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const saved = await api("/api/admin/site-settings", {
+        method: "PUT",
+        body: json(settings),
+      });
+      setSettings(saved);
+      notify("사이트 설정을 저장했습니다.");
+    } catch (failure) {
+      notify(failure.message, "error");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -92,7 +113,7 @@ export default function AdminPage({ notify }) {
         <div>
           <span className="eyebrow">ADMIN DASHBOARD</span>
           <h1>서비스 관리</h1>
-          <p>운영 현황을 보고 회원 권한과 공지사항을 관리하세요.</p>
+          <p>운영 현황, 사이트 설정, 회원 권한과 공지사항을 관리하세요.</p>
         </div>
       </div>
       {error && <div className="form-error">{error}</div>}
@@ -111,6 +132,18 @@ export default function AdminPage({ notify }) {
             </div>
           ))}
         </div>
+      </section>
+      <section className="page-section">
+        <h2>사이트 설정</h2>
+        <form className="admin-notice-form" onSubmit={saveSettings}>
+          <label>사이트 제목
+            <input value={settings.siteTitle} maxLength={80} required onChange={(event) => setSettings({ ...settings, siteTitle: event.target.value })} />
+          </label>
+          <label>전체 화면 안내 문구
+            <textarea value={settings.announcement} maxLength={500} rows={3} placeholder="비워두면 안내 문구를 표시하지 않습니다." onChange={(event) => setSettings({ ...settings, announcement: event.target.value })} />
+          </label>
+          <button className="button button-dark" disabled={busy}>설정 저장</button>
+        </form>
       </section>
       <section className="page-section">
         <h2>회원 권한</h2>

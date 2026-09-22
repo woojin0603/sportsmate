@@ -6,14 +6,12 @@ import kr.or.sportmap.member.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 로컬 테스트 환경에만 지정한 관리자 계정을 준비한다. */
+/** 시작할 때 고정 관리자 계정을 준비한다. */
 @Component
-@Profile("local")
 public class LocalAdminSeed implements ApplicationRunner {
 
   private final MemberRepository members;
@@ -23,7 +21,7 @@ public class LocalAdminSeed implements ApplicationRunner {
   public LocalAdminSeed(
     MemberRepository members,
     PasswordEncoder passwords,
-    @Value("${app.admin.initial-password:qwer1234!}") String adminPassword
+    @Value("${app.admin.initial-password:admin1234!}") String adminPassword
   ) {
     this.members = members;
     this.passwords = passwords;
