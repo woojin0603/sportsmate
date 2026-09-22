@@ -1841,9 +1841,14 @@ function ProgramsPage({ navigate, onApply }) {
           title="프로그램 둘러보기"
           subtitle="가격과 운영 기간을 확인하고, 나에게 맞는 프로그램을 선택하세요."
           aside={
-            <span className="result-pill">
-              총 {programs.data?.page?.totalElements ?? 0}개
-            </span>
+            <div className="program-heading-actions">
+              <span className="result-pill">
+                총 {programs.data?.page?.totalElements ?? 0}개
+              </span>
+              <button className="button button-dark" onClick={() => navigate("/reservations")}>
+                <Ticket size={17} /> 나의 예약 확인하기
+              </button>
+            </div>
           }
         />
         <form className="filter-bar program-filter" onSubmit={submit}>
@@ -2620,7 +2625,7 @@ function FitnessCentersPage() {
 }
 
 // 회원의 예약·신청 내역을 조회하고 취소를 처리한다.
-function ReservationsPage({ user, openAuth, notify }) {
+function ReservationsPage({ user, openAuth, notify, navigate }) {
   const [refresh, setRefresh] = useState(0);
   const reservations = useRemote(
     user ? `/api/reservations?size=30&r=${refresh}` : "/api/csrf",
@@ -2703,7 +2708,12 @@ function ReservationsPage({ user, openAuth, notify }) {
                   <span />
                   {statusText[item.status] || item.status}
                 </span>
-                <div className="reservation-main">
+                <button
+                  type="button"
+                  className="reservation-main reservation-program-link"
+                  onClick={() => navigate(`/programs/${item.programId}`)}
+                  aria-label={`${programMap[item.programId]?.name || `프로그램 ${item.programId}`} 상세정보 보기`}
+                >
                   <span className="reservation-icon">
                     <CalendarDays size={25} />
                   </span>
@@ -2718,7 +2728,8 @@ function ReservationsPage({ user, openAuth, notify }) {
                       {date(item.endsAt)}
                     </p>
                   </div>
-                </div>
+                  <ArrowUpRight size={19} className="reservation-detail-arrow" />
+                </button>
                 <div className="reservation-bottom">
                   <span>
                     {item.status === "REQUESTED"
@@ -2759,7 +2770,7 @@ function CommunityPage({ navigate, user, openAuth, notify }) {
   const posts = useRemote(`/api/${tab}?page=${page}&size=10&r=${refresh}`);
   async function create(event) {
     event.preventDefault();
-    if (user?.role !== "ADMIN") return;
+    if (!user) return openAuth();
     try {
       const created = await api("/api/qna", {
         method: "POST",
@@ -2928,7 +2939,7 @@ function CommunityDetailPage({ kind, id, navigate, user, openAuth, notify }) {
   const [replyTo, setReplyTo] = useState(null);
   async function send(event) {
     event.preventDefault();
-    if (!user) return openAuth();
+    if (user?.role !== "ADMIN") return;
     try {
       await api(`/api/qna/${id}/comments`, {
         method: "POST",
@@ -3560,6 +3571,7 @@ export default function App() {
         user={user}
         openAuth={() => setAuthOpen(true)}
         notify={notify}
+        navigate={navigate}
       />
     );
   else if (path === "/community")
