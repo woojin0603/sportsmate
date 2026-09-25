@@ -19,6 +19,15 @@ public class SiteSetting {
   @Column(nullable = false, length = 500)
   public String announcement = "";
 
+  @Column
+  public Boolean popupEnabled = false;
+
+  @Column(length = 120)
+  public String popupTitle = "";
+
+  @Column(length = 1000)
+  public String popupContent = "";
+
   protected SiteSetting() {}
 
   public static SiteSetting defaults() {

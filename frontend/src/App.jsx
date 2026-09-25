@@ -3760,6 +3760,7 @@ export default function App() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState(null);
   const [siteSettings, setSiteSettings] = useState(null);
+  const [sitePopupOpen, setSitePopupOpen] = useState(false);
   const notify = useCallback(
     (message, tone = "success") => setToast({ message, tone, id: Date.now() }),
     [],
@@ -3778,6 +3779,19 @@ export default function App() {
   useEffect(() => {
     if (siteSettings?.siteTitle) document.title = siteSettings.siteTitle;
   }, [siteSettings]);
+  useEffect(() => {
+    if (
+      !siteSettings?.popupEnabled ||
+      path === "/admin" ||
+      user?.role === "ADMIN"
+    ) {
+      setSitePopupOpen(false);
+      return;
+    }
+    const key = `sportmap-popup:${siteSettings.popupTitle}:${siteSettings.popupContent}`;
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(key) !== today) setSitePopupOpen(true);
+  }, [siteSettings, path, user]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 4500);
@@ -3876,7 +3890,7 @@ export default function App() {
   else if (path === "/admin")
     content =
       user?.role === "ADMIN" ? (
-        <AdminPage notify={notify} />
+        <AdminPage notify={notify} onSettingsSaved={setSiteSettings} />
       ) : (
         <div className="page-section">
           <h1>관리자 전용 화면입니다.</h1>
@@ -4018,6 +4032,51 @@ export default function App() {
           <button onClick={() => setToast(null)}>
             <X size={16} />
           </button>
+        </div>
+      )}
+      {sitePopupOpen && siteSettings && (
+        <div
+          className="modal-backdrop site-popup-backdrop"
+          onMouseDown={() => setSitePopupOpen(false)}
+        >
+          <div
+            className="site-popup"
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="site-popup-title"
+          >
+            <button
+              className="modal-close"
+              onClick={() => setSitePopupOpen(false)}
+              aria-label="팝업 닫기"
+            >
+              <X size={20} />
+            </button>
+            <span className="eyebrow">SPORTMAP NOTICE</span>
+            <h2 id="site-popup-title">{siteSettings.popupTitle}</h2>
+            <p>{siteSettings.popupContent}</p>
+            <div className="site-popup-actions">
+              <button
+                className="button button-dark"
+                onClick={() => setSitePopupOpen(false)}
+              >
+                확인
+              </button>
+              <button
+                onClick={() => {
+                  const key = `sportmap-popup:${siteSettings.popupTitle}:${siteSettings.popupContent}`;
+                  localStorage.setItem(
+                    key,
+                    new Date().toISOString().slice(0, 10),
+                  );
+                  setSitePopupOpen(false);
+                }}
+              >
+                오늘은 그만 보기
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

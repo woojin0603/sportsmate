@@ -25,26 +25,50 @@ public class SiteSettingController {
   /** 저장된 설정이 없으면 기본 표시값을 돌려준다. */
   @GetMapping("/site-settings")
   public SettingResponse get() {
-    return SettingResponse.of(settings.findById(1L).orElseGet(SiteSetting::defaults));
+    return SettingResponse.of(
+      settings.findById(1L).orElseGet(SiteSetting::defaults)
+    );
   }
 
   /** 관리자가 사이트 제목과 공통 안내 문구를 저장한다. */
   @PutMapping("/admin/site-settings")
   public SettingResponse update(@Valid @RequestBody SettingRequest request) {
-    SiteSetting setting = settings.findById(1L).orElseGet(SiteSetting::defaults);
+    SiteSetting setting = settings
+      .findById(1L)
+      .orElseGet(SiteSetting::defaults);
     setting.siteTitle = request.siteTitle().trim();
     setting.announcement = request.announcement().trim();
+    setting.popupEnabled = request.popupEnabled();
+    setting.popupTitle =
+      request.popupTitle() == null ? "" : request.popupTitle().trim();
+    setting.popupContent =
+      request.popupContent() == null ? "" : request.popupContent().trim();
     return SettingResponse.of(settings.save(setting));
   }
 
   public record SettingRequest(
     @NotBlank @Size(max = 80) String siteTitle,
-    @Size(max = 500) String announcement
+    @Size(max = 500) String announcement,
+    boolean popupEnabled,
+    @Size(max = 120) String popupTitle,
+    @Size(max = 1000) String popupContent
   ) {}
 
-  public record SettingResponse(String siteTitle, String announcement) {
+  public record SettingResponse(
+    String siteTitle,
+    String announcement,
+    boolean popupEnabled,
+    String popupTitle,
+    String popupContent
+  ) {
     static SettingResponse of(SiteSetting setting) {
-      return new SettingResponse(setting.siteTitle, setting.announcement);
+      return new SettingResponse(
+        setting.siteTitle,
+        setting.announcement,
+        Boolean.TRUE.equals(setting.popupEnabled),
+        setting.popupTitle == null ? "" : setting.popupTitle,
+        setting.popupContent == null ? "" : setting.popupContent
+      );
     }
   }
 }

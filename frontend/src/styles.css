@@ -4074,6 +4074,230 @@ textarea:focus-visible {
   margin: 0 auto;
   padding: 30px 28px 80px;
 }
+.admin-console {
+  display: grid;
+  gap: 22px;
+}
+.admin-intro {
+  background: linear-gradient(135deg, #e6f2d5, #f4f7e9);
+  border-radius: 20px;
+  padding: 30px 34px;
+}
+.admin-intro h1 {
+  margin: 8px 0;
+  font-size: 36px;
+}
+.admin-intro p {
+  margin: 0;
+  color: #5b6f62;
+}
+.admin-workspace {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.admin-categories {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e4e9e2;
+  border-radius: 16px;
+}
+.admin-categories button {
+  border: 0;
+  background: transparent;
+  color: #53665a;
+  border-radius: 10px;
+  padding: 13px 12px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-weight: 750;
+  text-align: left;
+}
+.admin-categories button:hover {
+  background: #f3f7ef;
+}
+.admin-categories button.active {
+  background: #173e32;
+  color: #fff;
+}
+.admin-category-panel {
+  min-width: 0;
+  min-height: 560px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e4e9e2;
+  border-radius: 16px;
+}
+.admin-category-panel > h2 {
+  margin: 0 0 8px;
+  font-size: 25px;
+}
+.admin-section-help {
+  color: #66776d;
+  margin: 0 0 24px;
+}
+.admin-toggle {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: #f4f8ef;
+  border-radius: 10px;
+}
+.admin-toggle input {
+  width: 19px !important;
+  height: 19px;
+}
+.admin-popup-preview {
+  border: 1px dashed #adc2a5;
+  background: #f8fbf5;
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+}
+.admin-popup-preview small {
+  color: #748578;
+}
+.admin-popup-preview strong {
+  font-size: 20px;
+}
+.admin-popup-preview p {
+  margin: 0;
+  color: #5c6d62;
+  white-space: pre-wrap;
+}
+.admin-qna-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 34%) minmax(0, 1fr);
+  border: 1px solid #e6ebe4;
+  border-radius: 14px;
+  min-height: 470px;
+  overflow: hidden;
+}
+.admin-question-list {
+  background: #f7f9f5;
+  border-right: 1px solid #e6ebe4;
+  max-height: 620px;
+  overflow-y: auto;
+}
+.admin-question-list button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #e7ebe5;
+  background: transparent;
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+.admin-question-list button.active {
+  background: #e9f3dc;
+}
+.admin-question-list small {
+  color: #76857b;
+}
+.admin-question-detail {
+  padding: 22px;
+  min-width: 0;
+}
+.admin-question-detail h3 {
+  margin-top: 0;
+  font-size: 22px;
+}
+.question-body {
+  white-space: pre-wrap;
+  line-height: 1.75;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #ecefeb;
+}
+.admin-answers {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+.admin-answers article {
+  background: #f4f8ef;
+  border-radius: 10px;
+  padding: 13px;
+}
+.admin-answers small {
+  margin-left: 10px;
+  color: #76857b;
+}
+.admin-answers p {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+}
+.admin-answer-form {
+  display: grid;
+  gap: 10px;
+}
+.admin-answer-form textarea {
+  width: 100%;
+  border: 1px solid #dfe5de;
+  border-radius: 10px;
+  padding: 12px;
+  resize: vertical;
+}
+.admin-empty {
+  display: grid;
+  place-items: center;
+  min-height: 380px;
+  color: #7b8980;
+}
+.site-popup {
+  width: min(520px, calc(100vw - 32px));
+  position: relative;
+  border-radius: 20px;
+  background: #fff;
+  padding: 34px;
+  box-shadow: 0 24px 80px #0d2f2455;
+}
+.site-popup h2 {
+  font-size: 28px;
+  margin: 10px 0 14px;
+}
+.site-popup > p {
+  white-space: pre-wrap;
+  color: #52655a;
+  line-height: 1.75;
+}
+.site-popup-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+.site-popup-actions > button:last-child {
+  border: 0;
+  background: transparent;
+  color: #66776d;
+}
+@media (max-width: 860px) {
+  .admin-workspace {
+    grid-template-columns: 1fr;
+  }
+  .admin-categories {
+    position: static;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    overflow-x: auto;
+  }
+  .admin-qna-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-question-list {
+    border-right: 0;
+    border-bottom: 1px solid #e6ebe4;
+    max-height: 240px;
+  }
+}
 .site-announcement {
   padding: 12px 18px;
   margin-bottom: 20px;
