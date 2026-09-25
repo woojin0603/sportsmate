@@ -121,6 +121,32 @@ public class MemberController {
     return MemberResponse.of(service.findAuthenticated(jwt.getSubject()));
   }
 
+  /** 로그인 회원의 비밀번호를 변경한다. */
+  @PatchMapping("/me/password")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void changePassword(
+    @AuthenticationPrincipal Jwt jwt,
+    @Valid @RequestBody PasswordChangeRequest request
+  ) {
+    service.changePassword(
+      jwt.getSubject(),
+      request.currentPassword(),
+      request.newPassword()
+    );
+  }
+
+  /** 본인 확인 후 계정과 회원 활동 데이터를 삭제하고 인증 쿠키를 만료한다. */
+  @DeleteMapping("/me")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void withdraw(
+    @AuthenticationPrincipal Jwt jwt,
+    @Valid @RequestBody WithdrawalRequest request,
+    HttpServletResponse response
+  ) {
+    service.withdraw(jwt.getSubject(), request.password());
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO));
+  }
+
   private String cookie(String value, Duration age) {
     return ResponseCookie.from("ACCESS_TOKEN", value)
       .httpOnly(true)
@@ -163,6 +189,13 @@ public class MemberController {
     @NotBlank String username,
     @NotBlank String password
   ) {}
+
+  public record PasswordChangeRequest(
+    @NotBlank String currentPassword,
+    @NotBlank @Size(min = 8, max = 72) String newPassword
+  ) {}
+
+  public record WithdrawalRequest(@NotBlank String password) {}
 
   public record MemberResponse(
     Long id,

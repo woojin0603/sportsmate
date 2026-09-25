@@ -26,6 +26,8 @@
 | POST | `/api/users/login` | 불필요, CSRF 필요 | `username`, `password` | 200, 회원 정보 및 `ACCESS_TOKEN` 쿠키 |
 | POST | `/api/users/logout` | 로그인·CSRF 필요 | 없음 | 204, 인증 쿠키 삭제 |
 | GET | `/api/users/mypage` | 로그인 필요 | 없음 | 200, 회원 정보 |
+| PATCH | `/api/users/me/password` | 로그인·CSRF 필요 | `currentPassword`, `newPassword` | 204, 비밀번호 변경 |
+| DELETE | `/api/users/me` | 로그인·CSRF 필요 | `password` | 204, 회원과 활동정보 삭제 |
 
 회원가입 예시:
 
@@ -147,7 +149,7 @@
 | GET | `/api/qna/{id}` | 질문 ID | 200, 질문 객체 |
 | POST | `/api/qna` | 로그인·CSRF, `title`, `content` | 201, 질문 객체 |
 | GET | `/api/qna/{id}/comments` | 질문 ID | 200, 댓글 배열 |
-| POST | `/api/qna/{id}/comments` | 로그인·CSRF, `parentId`(선택), `content` | 201, 댓글 객체 |
+| POST | `/api/qna/{id}/comments` | 관리자·CSRF, `parentId`(선택), `content` | 201, 댓글 객체 |
 
 리뷰 본문 예시 `{"rating":5,"content":"시설이 깨끗합니다"}`. 평점은 1~5, 내용은 필수·최대 2000자입니다. 리뷰 응답: `id`, `rating`, `content`, `createdAt`.
 

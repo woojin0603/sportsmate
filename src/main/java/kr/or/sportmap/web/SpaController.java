@@ -21,6 +21,9 @@ public class SpaController {
     "/community",
     "/community/{kind}/{id}",
     "/account",
+    "/data-guide",
+    "/privacy",
+    "/terms",
     "/admin",
   })
   public String index() {

@@ -161,12 +161,16 @@ public class SecurityConfig {
           "/community",
           "/community/**",
           "/account",
+          "/data-guide",
+          "/privacy",
+          "/terms",
           "/admin"
         )
         .permitAll()
         .requestMatchers(
           HttpMethod.GET,
           "/api/csrf",
+          "/api/health",
           "/api/facilities/**",
           "/api/programs/**",
           "/api/regions/**",

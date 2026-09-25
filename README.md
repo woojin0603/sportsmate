@@ -32,7 +32,7 @@ $env:MAIL_FROM='noreply@example.com'
 
 가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 로컬 모드에서는 테스트 링크가 표시되고 실제 모드에서는 메일이 발송됩니다. 메일의 인증 버튼을 발송 후 10분 안에 누르고 휴대폰 인증까지 완료한 뒤 회원가입할 수 있습니다. 이메일 재발송은 1분 뒤 가능합니다. 기존 데모 계정의 로그인에는 영향을 주지 않습니다.
 
-로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 파일에서 추린 실제 프로그램 240건과 해당 시설이 자동 적재됩니다. 테스트 회원·게시글 및 자체 예약 예시도 함께 생성됩니다. 화면별 테스트 주소와 로그인 계정은 [docs/DEMO_DATA.md](docs/DEMO_DATA.md)에 있습니다. 로컬 H2는 프로젝트 루트의 `sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다. 기존 메모리 H2에만 있던 회원은 파일 DB로 이전되지 않으므로 한 번 다시 가입해야 합니다.
+로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 미리보기와 해당 시설을 적재할 수 있습니다. 테스트 회원·게시글 자동 생성은 비활성화했습니다. 로컬 H2는 프로젝트 루트의 `sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다.
 
 ## ERD 수정 요약
 
@@ -117,11 +117,11 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
 
 브라우저는 먼저 `GET /api/csrf`로 CSRF 토큰과 `XSRF-TOKEN` 쿠키를 받고, 모든 POST/PATCH 요청에 `X-XSRF-TOKEN: <token>` 헤더를 보냅니다. 그 다음 회원가입·로그인을 요청하세요. 로그아웃은 `POST /api/users/logout`, 내 정보는 `GET /api/users/mypage`입니다. JWT 쿠키는 로그아웃 시 브라우저에서 삭제되지만 이미 탈취된 토큰은 15분 만료 전까지 유효할 수 있습니다.
 
-인증 회원은 `POST /api/qna`, `POST /api/qna/{id}/comments`, `POST /api/facilities/{facilityId}/reviews`, `POST /api/reservations`, `PATCH /api/reservations/{id}/cancel`을 사용할 수 있습니다. 예약 조회는 `GET /api/reservations`와 `GET /api/reservations/{id}`입니다. 자체 운영 프로그램의 예약 확정은 `bookingSupported=true`이고 `capacity`가 설정된 경우에만 허용합니다. 공공데이터 프로그램은 운영기관의 실시간 잔여석·접수 API가 없어 `POST /api/reservations`에 `{"programId":1}`만 보내면 자체 신청 내역을 `REQUESTED`로 기록합니다. 이 상태는 운영기관 예약 확정이 아니며, 실제 접수는 응답의 `registrationUrl`에서 해야 합니다. 같은 회원의 중복 신청은 409, 종료된 강좌 신청은 409입니다. 취소 후에는 재신청할 수 있습니다.
+인증 회원은 `POST /api/qna`, `POST /api/facilities/{facilityId}/reviews`, `POST /api/reservations`, `PATCH /api/reservations/{id}/cancel`을 사용할 수 있으며 Q&A 댓글은 관리자만 작성할 수 있습니다. 예약 조회는 `GET /api/reservations`와 `GET /api/reservations/{id}`입니다. 자체 운영 프로그램의 예약 확정은 `bookingSupported=true`이고 `capacity`가 설정된 경우에만 허용합니다. 공공데이터 프로그램은 운영기관의 실시간 잔여석·접수 API가 없어 `POST /api/reservations`에 `{"programId":1}`만 보내면 자체 신청 내역을 `REQUESTED`로 기록합니다. 이 상태는 운영기관 예약 확정이 아니며, 실제 접수는 응답의 `registrationUrl`에서 해야 합니다. 같은 회원의 중복 신청은 409, 종료된 강좌 신청은 409입니다. 취소 후에는 재신청할 수 있습니다.
 
 ### 관리자 화면과 권한
 
-서버 시작 시 모든 프로필에서 `admin` 계정을 준비합니다. 기본 비밀번호는 `admin1234!`이며 `config/local-secrets.properties`에 `app.admin.initial-password=<새 비밀번호>`를 넣어 변경할 수 있습니다. 시작 시 지정한 비밀번호와 ADMIN 권한으로 동기화됩니다. 공개 ngrok 링크를 열기 전에는 반드시 비밀번호를 바꾸고 Spring Boot를 재시작하세요. 로컬 데모 회원 자동 생성은 비활성화되어 있습니다.
+로컬 프로필은 `admin/admin1234!` 관리자를 준비합니다. 운영 프로필은 기본 관리자 자동 생성을 사용하지 않습니다. 운영에서 초기 관리자가 꼭 필요할 때만 `ADMIN_SEED_ENABLED=true`와 강한 `ADMIN_INITIAL_PASSWORD`를 비밀 환경변수로 지정하고, 생성 직후 자동 생성을 다시 끄세요. 로컬 데모 회원 자동 생성은 비활성화되어 있습니다.
 
 로그인하면 일반 계정은 `USER`, 관리자 계정은 `ADMIN` 역할이 JWT에 들어갑니다. 관리자는 `/admin` 화면에서 회원·시설·프로그램·예약·공지 건수를 보고, 회원 역할 변경과 공지 작성·수정·삭제를 할 수 있습니다. 서버의 `/api/admin/**`는 JWT와 현재 DB 권한을 모두 확인하므로 화면 주소를 직접 입력해도 일반 사용자는 관리 데이터를 볼 수 없습니다. 관리자 권한 해제는 즉시 적용되고, 새 관리자 권한은 다시 로그인해야 토큰에 반영됩니다. 기존 H2 회원의 빈 역할 값은 `USER`로 처리합니다.
 
@@ -159,4 +159,6 @@ $env:PUBLIC_FACILITY_SERVICE_KEY='발급받은-인증키'
 
 이번 수정의 실행 결과와 Gradle 검증 제한은 [docs/VALIDATION.md](docs/VALIDATION.md)에 기록했습니다.
 
-로컬 H2는 실행 시 스키마가 생성되고 종료 시 사라집니다. MySQL 프로필의 `ddl-auto=update`는 개발용이며 제출·운영 환경에서는 Flyway 마이그레이션과 로그인 시도 제한을 추가해야 합니다.
+로컬 H2는 파일 DB라 재시작 후에도 유지됩니다. MySQL 프로필의 `ddl-auto=update`는 현재 시제품용이므로 정식 운영 전 Flyway 마이그레이션으로 교체해야 합니다. 로그인은 아이디별 5회 실패 시 10분 동안 제한됩니다.
+
+공모전 제출용 핵심 메시지와 증빙 항목은 [공모전 제출 정리](docs/CONTEST_SUBMISSION.md), 배포 전 확인 사항은 [릴리스 점검표](docs/RELEASE_CHECKLIST.md)를 참고하세요.

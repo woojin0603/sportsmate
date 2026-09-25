@@ -6,12 +6,18 @@ import kr.or.sportmap.member.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 시작할 때 고정 관리자 계정을 준비한다. */
 @Component
+@ConditionalOnProperty(
+  prefix = "app.admin",
+  name = "seed-enabled",
+  havingValue = "true"
+)
 public class LocalAdminSeed implements ApplicationRunner {
 
   private final MemberRepository members;
@@ -21,7 +27,7 @@ public class LocalAdminSeed implements ApplicationRunner {
   public LocalAdminSeed(
     MemberRepository members,
     PasswordEncoder passwords,
-    @Value("${app.admin.initial-password:admin1234!}") String adminPassword
+    @Value("${app.admin.initial-password}") String adminPassword
   ) {
     this.members = members;
     this.passwords = passwords;

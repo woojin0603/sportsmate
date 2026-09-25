@@ -186,20 +186,185 @@ function LoadingCards({ count = 3 }) {
 
 // API 호출 실패 원인과 재시도 버튼을 보여준다.
 function PageError({ message, retry }) {
-  const hint = message.includes("공공데이터 API URL/키")
-    ? "Spring 설정에 체육시설 API 인증키를 넣고 서버를 다시 실행해 주세요."
-    : "Spring Boot 서버가 실행 중인지 확인해 주세요.";
+  const configurationError = message.includes("공공데이터 API URL/키");
+  const displayMessage = configurationError
+    ? "현재 실시간 공공데이터를 연결할 수 없습니다."
+    : message;
+  const hint = configurationError
+    ? "현재 실시간 자료를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
+    : "일시적인 오류일 수 있습니다. 잠시 후 다시 시도해 주세요.";
   return (
     <Empty
       icon={CircleHelp}
       title="데이터를 불러오지 못했어요"
-      description={`${message} · ${hint}`}
+      description={`${displayMessage} · ${hint}`}
       action={
         <button className="button button-dark" onClick={retry}>
           다시 시도
         </button>
       }
     />
+  );
+}
+
+// 공공데이터의 기준일과 가공 범위를 투명하게 안내한다.
+function DataGuidePage() {
+  const datasets = [
+    [
+      "전국 체육시설 정보 OPEN API",
+      "국민체육진흥공단",
+      "실시간 조회",
+      "시설명·유형·주소·좌표·대표전화",
+    ],
+    [
+      "공공체육시설 프로그램정보",
+      "체육종합빅데이터센터",
+      "2026년 7월 배포본",
+      "운영기관·종목·운영기간·요일·요금·정원",
+    ],
+    [
+      "국민연령별 추천운동정보",
+      "국민체육진흥공단",
+      "제공 파일 기준",
+      "연령·성별·BMI·체력등급별 운동 추천",
+    ],
+    [
+      "체력측정 운동처방 정보",
+      "국민체육진흥공단",
+      "2025년 8월~2026년 7월 자료",
+      "개인식별값을 제외한 조건별 빈도 집계",
+    ],
+  ];
+  return (
+    <section className="page-section policy-page">
+      <span className="eyebrow">OPEN DATA TRANSPARENCY</span>
+      <h1>공공데이터 활용 안내</h1>
+      <p className="policy-lead">
+        SportMap은 체력 확인부터 운동 추천, 주변 시설과 프로그램 탐색, 일정
+        관리까지 한 흐름으로 연결합니다.
+      </p>
+      <div className="data-table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>데이터</th>
+              <th>제공기관</th>
+              <th>기준</th>
+              <th>서비스 활용</th>
+            </tr>
+          </thead>
+          <tbody>
+            {datasets.map((row) => (
+              <tr key={row[0]}>
+                {row.map((value) => (
+                  <td key={value}>{value}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="policy-card">
+        <h2>가공 및 한계</h2>
+        <ul>
+          <li>
+            시설은 명칭·주소·좌표를 기준으로 정규화하며, 원천별 갱신 시점 차이로
+            실제 운영 정보와 다를 수 있습니다.
+          </li>
+          <li>
+            프로그램의 운영 기간과 모집 정원은 실시간 접수 기간이나 잔여석이
+            아닙니다. 최종 접수 상태는 운영기관에서 확인해야 합니다.
+          </li>
+          <li>
+            운동 추천과 PDF A~D 결과는 운동 계획을 돕는 참고 정보이며
+            국민체력100 공식 인증등급이나 의료 진단이 아닙니다.
+          </li>
+          <li>오류가 의심되면 시설 또는 운영기관의 최신 안내를 우선합니다.</li>
+        </ul>
+      </div>
+      <a
+        className="button button-dark"
+        href="https://www.data.go.kr/data/15113986/openapi.do"
+        target="_blank"
+        rel="noreferrer"
+      >
+        공공데이터 원문 확인 <ArrowUpRight size={17} />
+      </a>
+    </section>
+  );
+}
+
+// 회원이 확인해야 할 개인정보 처리 원칙과 이용 조건을 안내한다.
+function PolicyPage({ kind }) {
+  const privacy = kind === "privacy";
+  return (
+    <section className="page-section policy-page">
+      <span className="eyebrow">SPORTMAP POLICY</span>
+      <h1>{privacy ? "개인정보처리방침" : "이용약관"}</h1>
+      <p className="policy-lead">
+        시행일: 2026년 9월 25일 · 공모전 시제품 운영 기준
+      </p>
+      {privacy ? (
+        <>
+          <div className="policy-card">
+            <h2>수집 항목과 목적</h2>
+            <p>
+              회원가입 시 성명, 아이디, 암호화된 비밀번호, 생년월일, 이메일,
+              전화번호, 성별을 수집해 본인 확인, 연령별 추천, 예약 일정과 고객
+              문의 처리에 사용합니다.
+            </p>
+          </div>
+          <div className="policy-card">
+            <h2>체력 결과지</h2>
+            <p>
+              업로드한 PDF는 서버에서 텍스트 추출과 참고 등급 계산에 사용합니다.
+              원본 파일은 영구 보관하지 않으며, 추출된 측정값과 평가 결과는
+              회원이 서비스를 이용하는 동안 보관합니다.
+            </p>
+          </div>
+          <div className="policy-card">
+            <h2>보유와 삭제</h2>
+            <p>
+              회원정보와 활동정보는 탈퇴 시 함께 삭제합니다. 법령상 별도 보관
+              의무가 생기는 경우 해당 기간과 근거를 별도로 고지합니다.
+            </p>
+          </div>
+          <div className="policy-card">
+            <h2>이용자 권리</h2>
+            <p>
+              마이페이지에서 정보를 확인하고 비밀번호를 변경하거나 회원 탈퇴를
+              요청할 수 있습니다.
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="policy-card">
+            <h2>서비스 성격</h2>
+            <p>
+              SportMap은 공공 체육데이터를 탐색하고 운동 계획을 관리하는
+              시제품입니다. 시설 운영과 프로그램 접수·확정은 각 운영기관이
+              담당합니다.
+            </p>
+          </div>
+          <div className="policy-card">
+            <h2>건강정보 고지</h2>
+            <p>
+              추천 운동과 체력 평가는 참고 정보입니다. 통증이나 질환이 있으면
+              운동 전에 의료 전문가와 상담해야 합니다.
+            </p>
+          </div>
+          <div className="policy-card">
+            <h2>이용자 책임</h2>
+            <p>
+              타인의 정보나 결과지를 업로드하거나 게시판을 악용해서는 안 됩니다.
+              공공데이터와 운영기관의 최신 정보가 다르면 운영기관 안내를
+              우선합니다.
+            </p>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -1510,6 +1675,13 @@ function FacilityDetailPage({ id, navigate, notify, requireAuth }) {
         </div>
         <span className="detail-badge">{item.type || "체육시설"}</span>
       </div>
+      <button
+        className="data-source-note"
+        onClick={() => navigate("/data-guide")}
+      >
+        <BadgeCheck size={17} /> 국민체육진흥공단 공공데이터 기반 · 출처와 갱신
+        기준 보기
+      </button>
       <div className="detail-columns">
         <div>
           <div className="panel">
@@ -1845,7 +2017,10 @@ function ProgramsPage({ navigate, onApply }) {
               <span className="result-pill">
                 총 {programs.data?.page?.totalElements ?? 0}개
               </span>
-              <button className="button button-dark" onClick={() => navigate("/reservations")}>
+              <button
+                className="button button-dark"
+                onClick={() => navigate("/reservations")}
+              >
                 <Ticket size={17} /> 나의 예약 확인하기
               </button>
             </div>
@@ -1977,6 +2152,13 @@ function ProgramDetailPage({ id, navigate, onApply }) {
               {item.scheduleText || "일정 확인 필요"}
             </p>
           </div>
+          <button
+            className="data-source-note"
+            onClick={() => navigate("/data-guide")}
+          >
+            <BadgeCheck size={17} /> 2026년 7월 공공체육시설 프로그램 데이터 ·
+            활용 안내 보기
+          </button>
           <div className="panel">
             <SectionTitle eyebrow="AT A GLANCE" title="프로그램 안내" />
             <div className="info-list">
@@ -2728,7 +2910,10 @@ function ReservationsPage({ user, openAuth, notify, navigate }) {
                       {date(item.endsAt)}
                     </p>
                   </div>
-                  <ArrowUpRight size={19} className="reservation-detail-arrow" />
+                  <ArrowUpRight
+                    size={19}
+                    className="reservation-detail-arrow"
+                  />
                 </button>
                 <div className="reservation-bottom">
                   <span>
@@ -2990,45 +3175,49 @@ function CommunityDetailPage({ kind, id, navigate, user, openAuth, notify }) {
                   <small>{shortDate(comment.createdAt)}</small>
                 </div>
                 <p>{comment.content}</p>
-                {user?.role === "ADMIN" && <button
-                  onClick={() => {
-                    setReplyTo(comment.id);
-                    document.getElementById("comment-input")?.focus();
-                  }}
-                >
-                  답글 달기
-                </button>}
+                {user?.role === "ADMIN" && (
+                  <button
+                    onClick={() => {
+                      setReplyTo(comment.id);
+                      document.getElementById("comment-input")?.focus();
+                    }}
+                  >
+                    답글 달기
+                  </button>
+                )}
               </div>
             </div>
           ))}
           {!comments.loading && !comments.data?.length && (
             <p className="muted">아직 관리자 답변이 없습니다.</p>
           )}
-          {user?.role === "ADMIN" && <form className="comment-form" onSubmit={send}>
-            {replyTo && (
-              <span className="reply-hint">
-                답글 작성 중{" "}
-                <button type="button" onClick={() => setReplyTo(null)}>
-                  <X size={14} />
-                </button>
-              </span>
-            )}
-            <textarea
-              id="comment-input"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              maxLength={3000}
-              required
-              placeholder={
-                user
-                  ? "따뜻한 댓글을 남겨주세요."
-                  : "로그인 후 댓글을 작성할 수 있어요."
-              }
-            />
-            <button className="button button-dark" disabled={!content.trim()}>
-              <Send size={16} /> 댓글 등록
-            </button>
-          </form>}
+          {user?.role === "ADMIN" && (
+            <form className="comment-form" onSubmit={send}>
+              {replyTo && (
+                <span className="reply-hint">
+                  답글 작성 중{" "}
+                  <button type="button" onClick={() => setReplyTo(null)}>
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+              <textarea
+                id="comment-input"
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                maxLength={3000}
+                required
+                placeholder={
+                  user
+                    ? "따뜻한 댓글을 남겨주세요."
+                    : "로그인 후 댓글을 작성할 수 있어요."
+                }
+              />
+              <button className="button button-dark" disabled={!content.trim()}>
+                <Send size={16} /> 댓글 등록
+              </button>
+            </form>
+          )}
         </div>
       )}
     </>
@@ -3036,7 +3225,51 @@ function CommunityDetailPage({ kind, id, navigate, user, openAuth, notify }) {
 }
 
 // 로그인한 회원의 프로필과 주요 활동 링크를 표시한다.
-function AccountPage({ user, openAuth, onLogout, navigate }) {
+function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+  });
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function changePassword(event) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await api("/api/users/me/password", {
+        method: "PATCH",
+        body: json(passwords),
+      });
+      setPasswords({ currentPassword: "", newPassword: "" });
+      notify("비밀번호를 변경했습니다.");
+    } catch (error) {
+      notify(error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function withdraw(event) {
+    event.preventDefault();
+    if (
+      !window.confirm(
+        "계정과 예약·게시글·체력 기록을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await api("/api/users/me", {
+        method: "DELETE",
+        body: json({ password: withdrawPassword }),
+      });
+      notify("회원 탈퇴가 완료됐습니다.");
+      await onLogout(true);
+    } catch (error) {
+      notify(error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
   if (!user)
     return (
       <div className="account-guest">
@@ -3135,6 +3368,60 @@ function AccountPage({ user, openAuth, onLogout, navigate }) {
           </button>
         </div>
       </div>
+      {user.role !== "ADMIN" && (
+        <section className="account-security panel">
+          <SectionTitle
+            eyebrow="SECURITY & PRIVACY"
+            title="계정 보안"
+            subtitle="비밀번호 변경과 개인정보 삭제를 직접 관리할 수 있습니다."
+          />
+          <div className="account-security-grid">
+            <form onSubmit={changePassword}>
+              <h3>비밀번호 변경</h3>
+              <input
+                type="password"
+                required
+                placeholder="현재 비밀번호"
+                value={passwords.currentPassword}
+                onChange={(e) =>
+                  setPasswords({
+                    ...passwords,
+                    currentPassword: e.target.value,
+                  })
+                }
+              />
+              <input
+                type="password"
+                required
+                minLength={8}
+                maxLength={72}
+                placeholder="새 비밀번호 (8자 이상)"
+                value={passwords.newPassword}
+                onChange={(e) =>
+                  setPasswords({ ...passwords, newPassword: e.target.value })
+                }
+              />
+              <button className="button button-dark" disabled={busy}>
+                비밀번호 변경
+              </button>
+            </form>
+            <form onSubmit={withdraw} className="withdraw-form">
+              <h3>회원 탈퇴</h3>
+              <p>계정, 예약, 질문, 리뷰와 체력 분석 기록이 삭제됩니다.</p>
+              <input
+                type="password"
+                required
+                placeholder="확인을 위해 비밀번호 입력"
+                value={withdrawPassword}
+                onChange={(e) => setWithdrawPassword(e.target.value)}
+              />
+              <button className="button danger-button" disabled={busy}>
+                계정과 개인정보 삭제
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -3326,6 +3613,33 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
                 }
                 onVerified={setPhoneVerification}
               />
+              <label className="consent-check">
+                <input type="checkbox" required />{" "}
+                <span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      window.history.pushState({}, "", "/privacy");
+                      window.dispatchEvent(new PopStateEvent("popstate"));
+                    }}
+                  >
+                    개인정보처리방침
+                  </button>
+                  과{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      window.history.pushState({}, "", "/terms");
+                      window.dispatchEvent(new PopStateEvent("popstate"));
+                    }}
+                  >
+                    이용약관
+                  </button>
+                  에 동의합니다.
+                </span>
+              </label>
             </>
           )}
           {error && <div className="form-error">{error}</div>}
@@ -3349,7 +3663,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
         </div>
         {mode === "login" && (
           <div className="demo-hint">
-          <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
+            <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
           </div>
         )}
       </div>
@@ -3457,7 +3771,9 @@ export default function App() {
       .finally(() => setAuthLoading(false));
   }, []);
   useEffect(() => {
-    api("/api/site-settings").then(setSiteSettings).catch(() => {});
+    api("/api/site-settings")
+      .then(setSiteSettings)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (siteSettings?.siteTitle) document.title = siteSettings.siteTitle;
@@ -3488,12 +3804,14 @@ export default function App() {
       notify(error.message, "error");
     }
   }
-  async function onLogout() {
+  async function onLogout(alreadyLoggedOut = false) {
     try {
-      await api("/api/users/logout", { method: "POST" });
+      if (!alreadyLoggedOut) await api("/api/users/logout", { method: "POST" });
       setUser(null);
       resetCsrf();
-      notify("로그아웃했습니다.");
+      notify(
+        alreadyLoggedOut ? "회원정보가 삭제됐습니다." : "로그아웃했습니다.",
+      );
       navigate("/");
     } catch (error) {
       notify(error.message, "error");
@@ -3590,8 +3908,12 @@ export default function App() {
         openAuth={() => setAuthOpen(true)}
         onLogout={onLogout}
         navigate={navigate}
+        notify={notify}
       />
     );
+  else if (path === "/data-guide") content = <DataGuidePage />;
+  else if (path === "/privacy") content = <PolicyPage kind="privacy" />;
+  else if (path === "/terms") content = <PolicyPage kind="terms" />;
   else
     content = (
       <FacilitiesPage
@@ -3613,46 +3935,59 @@ export default function App() {
           </header>
           <main className="admin-main">{content}</main>
         </div>
-      ) : <>
-      <Sidebar
-        path={path}
-        navigate={navigate}
-        user={user}
-        openAuth={() => setAuthOpen(true)}
-        mobileMenu={mobileMenu}
-        setMobileMenu={setMobileMenu}
-      />
-      <div className="main-wrap">
-        <Header
-          path={path}
-          navigate={navigate}
-          user={user}
-          openAuth={() => {
-            setAuthMode("login");
-            setAuthOpen(true);
-          }}
-          openSignup={() => {
-            setAuthMode("signup");
-            setAuthOpen(true);
-          }}
-          onLogout={onLogout}
-          mobileMenu={mobileMenu}
-          setMobileMenu={setMobileMenu}
-        />
-        <main className="main-content">
-          {siteSettings?.announcement && <div className="site-announcement" role="status">{siteSettings.announcement}</div>}
-          {content}
-          <footer className="footer">
-            <span>
-              © {new Date().getFullYear()} SportMap. 오늘의 움직임을 응원합니다.
-            </span>
-            <span>
-              Made with public sports data <HeartPulse size={14} />
-            </span>
-          </footer>
-        </main>
-      </div>
-      </>}
+      ) : (
+        <>
+          <Sidebar
+            path={path}
+            navigate={navigate}
+            user={user}
+            openAuth={() => setAuthOpen(true)}
+            mobileMenu={mobileMenu}
+            setMobileMenu={setMobileMenu}
+          />
+          <div className="main-wrap">
+            <Header
+              path={path}
+              navigate={navigate}
+              user={user}
+              openAuth={() => {
+                setAuthMode("login");
+                setAuthOpen(true);
+              }}
+              openSignup={() => {
+                setAuthMode("signup");
+                setAuthOpen(true);
+              }}
+              onLogout={onLogout}
+              mobileMenu={mobileMenu}
+              setMobileMenu={setMobileMenu}
+            />
+            <main className="main-content">
+              {siteSettings?.announcement && (
+                <div className="site-announcement" role="status">
+                  {siteSettings.announcement}
+                </div>
+              )}
+              {content}
+              <footer className="footer">
+                <span>
+                  © {new Date().getFullYear()} SportMap. 오늘의 움직임을
+                  응원합니다.
+                </span>
+                <span className="footer-links">
+                  <button onClick={() => navigate("/data-guide")}>
+                    공공데이터 활용
+                  </button>
+                  <button onClick={() => navigate("/privacy")}>
+                    개인정보처리방침
+                  </button>
+                  <button onClick={() => navigate("/terms")}>이용약관</button>
+                </span>
+              </footer>
+            </main>
+          </div>
+        </>
+      )}
       {authOpen && (
         <AuthModal
           initialMode={authMode}

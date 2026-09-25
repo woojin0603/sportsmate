@@ -2225,11 +2225,35 @@ textarea:focus-visible {
   gap: 14px;
   padding: 15px 0;
 }
-.program-heading-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-.program-heading-actions .button { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.reservation-program-link { width: 100%; border: 0; background: transparent; color: inherit; text-align: left; border-radius: 10px; }
-.reservation-program-link:hover { background: #f4f8f0; }
-.reservation-detail-arrow { margin-left: auto; flex: none; color: #557c5e; }
+.program-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.program-heading-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.reservation-program-link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  border-radius: 10px;
+}
+.reservation-program-link:hover {
+  background: #f4f8f0;
+}
+.reservation-detail-arrow {
+  margin-left: auto;
+  flex: none;
+  color: #557c5e;
+}
 .reservation-icon {
   display: grid;
   place-items: center;
@@ -4016,10 +4040,183 @@ textarea:focus-visible {
   text-align: center;
   text-decoration: none;
 }
-.admin-layout { width: 100%; min-height: 100vh; background: #f3f6f1; }
-.admin-header { min-height: 76px; padding: 18px max(28px, calc((100vw - 1320px)/2)); background: #173e32; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.admin-header strong { font-size: 22px; }
-.admin-header div { display: flex; gap: 10px; }
-.admin-header button { border: 1px solid #9ec7a9; border-radius: 9px; color: white; background: transparent; padding: 8px 14px; }
-.admin-main { max-width: 1320px; margin: 0 auto; padding: 30px 28px 80px; }
-.site-announcement { padding: 12px 18px; margin-bottom: 20px; border-radius: 12px; background: #e8f4db; color: #244b35; font-weight: 700; }
+.admin-layout {
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f6f1;
+}
+.admin-header {
+  min-height: 76px;
+  padding: 18px max(28px, calc((100vw - 1320px) / 2));
+  background: #173e32;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.admin-header strong {
+  font-size: 22px;
+}
+.admin-header div {
+  display: flex;
+  gap: 10px;
+}
+.admin-header button {
+  border: 1px solid #9ec7a9;
+  border-radius: 9px;
+  color: white;
+  background: transparent;
+  padding: 8px 14px;
+}
+.admin-main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 30px 28px 80px;
+}
+.site-announcement {
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: #e8f4db;
+  color: #244b35;
+  font-weight: 700;
+}
+.data-source-note {
+  width: 100%;
+  border: 1px solid #dce9d7;
+  background: #f5faef;
+  color: #42624d;
+  border-radius: 11px;
+  padding: 11px 14px;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  text-align: left;
+}
+.policy-page {
+  max-width: 1050px;
+  margin: 0 auto;
+}
+.policy-page > h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  margin: 10px 0 12px;
+}
+.policy-lead {
+  color: #5c6f63;
+  font-size: 18px;
+  line-height: 1.75;
+  margin-bottom: 28px;
+}
+.policy-card {
+  background: #fff;
+  border: 1px solid #e5ebe3;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 14px 0;
+}
+.policy-card h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.policy-card p,
+.policy-card li {
+  color: #53665a;
+  line-height: 1.75;
+}
+.data-table-wrap {
+  overflow-x: auto;
+  margin: 20px 0;
+  border: 1px solid #e5ebe3;
+  border-radius: 16px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  min-width: 720px;
+}
+.data-table th,
+.data-table td {
+  padding: 15px;
+  border-bottom: 1px solid #edf0ec;
+  text-align: left;
+}
+.data-table th {
+  background: #eef6e7;
+  color: #294b36;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+}
+.footer-links button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #53685a;
+  text-decoration: underline;
+}
+.account-security {
+  margin-top: 24px;
+}
+.account-security-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.account-security-grid form {
+  display: grid;
+  gap: 11px;
+  align-content: start;
+}
+.account-security-grid input {
+  width: 100%;
+  border: 1px solid #dfe5de;
+  border-radius: 10px;
+  padding: 12px;
+}
+.withdraw-form {
+  border-left: 1px solid #e6e9e4;
+  padding-left: 24px;
+}
+.withdraw-form p {
+  color: #69786f;
+  margin: 0;
+}
+.danger-button {
+  background: #9f3f3f;
+  color: white;
+  border: 0;
+}
+.consent-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+.consent-check input {
+  width: auto !important;
+  margin-top: 4px;
+}
+.consent-check button {
+  border: 0;
+  background: none;
+  color: #315e42;
+  text-decoration: underline;
+  padding: 0;
+}
+@media (max-width: 720px) {
+  .account-security-grid {
+    grid-template-columns: 1fr;
+  }
+  .withdraw-form {
+    border-left: 0;
+    border-top: 1px solid #e6e9e4;
+    padding: 20px 0 0;
+  }
+}

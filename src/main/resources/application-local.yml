@@ -10,6 +10,9 @@ spring:
     console:
       enabled: false
 app:
+  admin:
+    seed-enabled: true
+    initial-password: ${ADMIN_INITIAL_PASSWORD:admin1234!}
   mail:
     mode: ${EMAIL_MODE:mock}
   sms:

@@ -34,6 +34,9 @@ server:
   error:
     include-message: always
 app:
+  admin:
+    seed-enabled: ${ADMIN_SEED_ENABLED:false}
+    initial-password: ${ADMIN_INITIAL_PASSWORD:}
   sms:
     mode: ${SMS_MODE:disabled}
     daily-limit: ${SMS_DAILY_LIMIT:100}
