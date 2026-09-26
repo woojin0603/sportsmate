@@ -4,6 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Comparator;
 import kr.or.sportmap.community.domain.Comment;
 import kr.or.sportmap.community.domain.Question;
 import kr.or.sportmap.community.repository.CommentRepository;
@@ -11,6 +14,8 @@ import kr.or.sportmap.community.repository.NoticeRepository;
 import kr.or.sportmap.community.repository.QuestionRepository;
 import kr.or.sportmap.member.service.MemberService;
 import kr.or.sportmap.member.domain.Member;
+import kr.or.sportmap.reservation.domain.Reservation;
+import kr.or.sportmap.reservation.repository.ReservationRepository;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,17 +32,20 @@ public class BoardController {
   private final QuestionRepository questions;
   private final CommentRepository comments;
   private final MemberService members;
+  private final ReservationRepository reservations;
 
   public BoardController(
     NoticeRepository notices,
     QuestionRepository questions,
     CommentRepository comments,
-    MemberService members
+    MemberService members,
+    ReservationRepository reservations
   ) {
     this.notices = notices;
     this.questions = questions;
     this.comments = comments;
     this.members = members;
+    this.reservations = reservations;
   }
 
   @GetMapping("/notices")
@@ -161,23 +169,24 @@ public class BoardController {
     );
   }
 
-  @GetMapping("/users/me/answer-notifications")
-  public java.util.List<AnswerNotificationResponse> answerNotifications(
+  @GetMapping("/users/me/notifications")
+  public java.util.List<NotificationResponse> notifications(
     @AuthenticationPrincipal Jwt jwt
   ) {
     Member member = members.findAuthenticated(jwt.getSubject());
-    return questions
+    var answers = questions
       .findTop20ByAuthorIdOrderByIdDesc(member.id)
       .stream()
       .map(question ->
         comments
           .findFirstByQuestionIdOrderByCreatedAtDesc(question.id)
           .map(answer ->
-            new AnswerNotificationResponse(
+            new NotificationResponse(
+              "ANSWER",
               question.id,
               question.title,
               answer.content,
-              answer.author.fullName,
+              "답변 · " + answer.author.fullName,
               answer.createdAt,
               question.answerReadAt != null &&
               !question.answerReadAt.isBefore(answer.createdAt)
@@ -186,6 +195,36 @@ public class BoardController {
           .orElse(null)
       )
       .filter(java.util.Objects::nonNull)
+      .toList();
+    ZoneId seoul = ZoneId.of("Asia/Seoul");
+    Instant dayStart = LocalDate.now(seoul).atStartOfDay(seoul).toInstant();
+    Instant dayEnd = LocalDate.now(seoul)
+      .plusDays(1)
+      .atStartOfDay(seoul)
+      .toInstant();
+    var starts = reservations
+      .findStartNotifications(
+        member.id,
+        dayStart,
+        dayEnd,
+        Reservation.Status.CANCELLED
+      )
+      .stream()
+      .map(reservation ->
+        new NotificationResponse(
+          "RESERVATION_START",
+          reservation.id,
+          reservation.program.name,
+          "오늘 시작하는 예약 프로그램입니다.",
+          "예약 일정",
+          reservation.startsAt,
+          reservation.startNotificationReadAt != null
+        )
+      )
+      .toList();
+    return java.util.stream.Stream
+      .concat(answers.stream(), starts.stream())
+      .sorted(Comparator.comparing(NotificationResponse::occurredAt).reversed())
       .toList();
   }
 
@@ -197,13 +236,24 @@ public class BoardController {
   ) {
     Member member = members.findAuthenticated(jwt.getSubject());
     Question question = questions
-      .findById(id)
+      .findByIdAndAuthorId(id, member.id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    if (!question.author.id.equals(member.id)) throw new ResponseStatusException(
-      HttpStatus.FORBIDDEN
-    );
     question.answerReadAt = Instant.now();
     questions.save(question);
+  }
+
+  @PatchMapping("/users/me/reservation-notifications/{id}/read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void readReservationNotification(
+    @PathVariable Long id,
+    @AuthenticationPrincipal Jwt jwt
+  ) {
+    Member member = members.findAuthenticated(jwt.getSubject());
+    Reservation reservation = reservations
+      .findByIdAndMemberId(id, member.id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    reservation.startNotificationReadAt = Instant.now();
+    reservations.save(reservation);
   }
 
   private PageRequest paging(int page, int size) {
@@ -245,12 +295,13 @@ public class BoardController {
     Instant createdAt
   ) {}
 
-  public record AnswerNotificationResponse(
-    Long questionId,
-    String questionTitle,
-    String answerPreview,
-    String answerAuthor,
-    Instant answeredAt,
+  public record NotificationResponse(
+    String type,
+    Long targetId,
+    String title,
+    String preview,
+    String source,
+    Instant occurredAt,
     boolean read
   ) {}
 }

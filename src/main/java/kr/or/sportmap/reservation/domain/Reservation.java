@@ -33,6 +33,9 @@ public class Reservation {
   @Column(nullable = false)
   public Instant createdAt = Instant.now();
 
+  /** 회원이 프로그램 시작일 알림을 확인한 시각이다. */
+  public Instant startNotificationReadAt;
+
   public enum Status {
     REQUESTED,
     CONFIRMED,

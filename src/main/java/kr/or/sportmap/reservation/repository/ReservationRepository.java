@@ -1,6 +1,7 @@
 package kr.or.sportmap.reservation.repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import kr.or.sportmap.reservation.domain.Reservation;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,21 @@ public interface ReservationRepository
   @Override
   @EntityGraph(attributePaths = { "member", "program" })
   Optional<Reservation> findById(Long id);
+
+  Optional<Reservation> findByIdAndMemberId(Long id, Long memberId);
+
+  @EntityGraph(attributePaths = "program")
+  @Query(
+    "select r from Reservation r where r.member.id = :memberId " +
+      "and r.startsAt >= :dayStart and r.startsAt < :dayEnd " +
+      "and r.status <> :cancelled order by r.startsAt asc"
+  )
+  List<Reservation> findStartNotifications(
+    @Param("memberId") Long memberId,
+    @Param("dayStart") Instant dayStart,
+    @Param("dayEnd") Instant dayEnd,
+    @Param("cancelled") Reservation.Status cancelled
+  );
 
   @Query(
     "select count(r) from Reservation r where r.program.id = :programId and r.status = :status " +

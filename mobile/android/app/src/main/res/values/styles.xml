@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.SportMap" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/sportmap_green</item>
+        <item name="android:navigationBarColor">@color/sportmap_background</item>
+        <item name="android:statusBarColor">@color/sportmap_green</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

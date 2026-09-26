@@ -436,7 +436,7 @@ function Header({
     }
     let active = true;
     const loadNotifications = () =>
-      api("/api/users/me/answer-notifications")
+      api("/api/users/me/notifications")
         .then((data) => active && setNotifications(data))
         .catch(() => active && setNotifications([]));
     loadNotifications();
@@ -452,13 +452,15 @@ function Header({
   async function openNotification(notification) {
     if (!notification.read) {
       try {
-        await api(
-          `/api/users/me/answer-notifications/${notification.questionId}/read`,
-          { method: "PATCH" },
-        );
+        const readPath =
+          notification.type === "RESERVATION_START"
+            ? `/api/users/me/reservation-notifications/${notification.targetId}/read`
+            : `/api/users/me/answer-notifications/${notification.targetId}/read`;
+        await api(readPath, { method: "PATCH" });
         setNotifications((current) =>
           current.map((item) =>
-            item.questionId === notification.questionId
+            item.type === notification.type &&
+            item.targetId === notification.targetId
               ? { ...item, read: true }
               : item,
           ),
@@ -468,7 +470,11 @@ function Header({
       }
     }
     setNotificationOpen(false);
-    navigate(`/community/qna/${notification.questionId}`);
+    navigate(
+      notification.type === "RESERVATION_START"
+        ? "/reservations"
+        : `/community/qna/${notification.targetId}`,
+    );
   }
   return (
     <header className="topbar">
@@ -502,7 +508,7 @@ function Header({
             <button
               className="notification-button"
               type="button"
-              aria-label={`답변 알림${unreadCount ? ` ${unreadCount}개` : ""}`}
+              aria-label={`알림${unreadCount ? ` ${unreadCount}개` : ""}`}
               aria-expanded={notificationOpen}
               onClick={() => setNotificationOpen((open) => !open)}
             >
@@ -516,7 +522,7 @@ function Header({
             {notificationOpen && (
               <div className="notification-panel">
                 <div className="notification-panel-title">
-                  <strong>답변 알림</strong>
+                  <strong>알림</strong>
                   <span>
                     {unreadCount ? `새 알림 ${unreadCount}개` : "모두 확인함"}
                   </span>
@@ -527,16 +533,16 @@ function Header({
                       <button
                         type="button"
                         className={notification.read ? "read" : "unread"}
-                        key={notification.questionId}
+                        key={`${notification.type}-${notification.targetId}`}
                         onClick={() => openNotification(notification)}
                       >
                         <span className="notification-dot" />
                         <span>
-                          <strong>{notification.questionTitle}</strong>
-                          <small>{notification.answerPreview}</small>
+                          <strong>{notification.title}</strong>
+                          <small>{notification.preview}</small>
                           <em>
-                            {notification.answerAuthor} ·{" "}
-                            {shortDate(notification.answeredAt)}
+                            {notification.source} ·{" "}
+                            {shortDate(notification.occurredAt)}
                           </em>
                         </span>
                       </button>
@@ -544,7 +550,7 @@ function Header({
                   </div>
                 ) : (
                   <p className="notification-empty">
-                    아직 도착한 답변이 없습니다.
+                    아직 도착한 알림이 없습니다.
                   </p>
                 )}
               </div>
