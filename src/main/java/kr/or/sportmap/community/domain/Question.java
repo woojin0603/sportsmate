@@ -25,6 +25,9 @@ public class Question {
   @Column(nullable = false)
   public Instant createdAt = Instant.now();
 
+  /** 질문 작성자가 마지막으로 답변 알림을 확인한 시각이다. */
+  public Instant answerReadAt;
+
   protected Question() {}
 
   public Long getId() {

@@ -161,6 +161,51 @@ public class BoardController {
     );
   }
 
+  @GetMapping("/users/me/answer-notifications")
+  public java.util.List<AnswerNotificationResponse> answerNotifications(
+    @AuthenticationPrincipal Jwt jwt
+  ) {
+    Member member = members.findAuthenticated(jwt.getSubject());
+    return questions
+      .findTop20ByAuthorIdOrderByIdDesc(member.id)
+      .stream()
+      .map(question ->
+        comments
+          .findFirstByQuestionIdOrderByCreatedAtDesc(question.id)
+          .map(answer ->
+            new AnswerNotificationResponse(
+              question.id,
+              question.title,
+              answer.content,
+              answer.author.fullName,
+              answer.createdAt,
+              question.answerReadAt != null &&
+              !question.answerReadAt.isBefore(answer.createdAt)
+            )
+          )
+          .orElse(null)
+      )
+      .filter(java.util.Objects::nonNull)
+      .toList();
+  }
+
+  @PatchMapping("/users/me/answer-notifications/{id}/read")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void readAnswerNotification(
+    @PathVariable Long id,
+    @AuthenticationPrincipal Jwt jwt
+  ) {
+    Member member = members.findAuthenticated(jwt.getSubject());
+    Question question = questions
+      .findById(id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (!question.author.id.equals(member.id)) throw new ResponseStatusException(
+      HttpStatus.FORBIDDEN
+    );
+    question.answerReadAt = Instant.now();
+    questions.save(question);
+  }
+
   private PageRequest paging(int page, int size) {
     if (page < 0 || size < 1 || size > 100) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST
@@ -198,5 +243,14 @@ public class BoardController {
     String authorName,
     String content,
     Instant createdAt
+  ) {}
+
+  public record AnswerNotificationResponse(
+    Long questionId,
+    String questionTitle,
+    String answerPreview,
+    String answerAuthor,
+    Instant answeredAt,
+    boolean read
   ) {}
 }

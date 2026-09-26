@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
+  Bell,
   CalendarDays,
   Check,
   ChevronDown,
@@ -425,6 +426,50 @@ function Header({
         : navItems.find(
             (item) => item.path !== "/" && isNavPath(path, item.path),
           )?.label || "마이페이지";
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setNotificationOpen(false);
+      return undefined;
+    }
+    let active = true;
+    const loadNotifications = () =>
+      api("/api/users/me/answer-notifications")
+        .then((data) => active && setNotifications(data))
+        .catch(() => active && setNotifications([]));
+    loadNotifications();
+    const timer = window.setInterval(loadNotifications, 60000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [user, path]);
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read,
+  ).length;
+  async function openNotification(notification) {
+    if (!notification.read) {
+      try {
+        await api(
+          `/api/users/me/answer-notifications/${notification.questionId}/read`,
+          { method: "PATCH" },
+        );
+        setNotifications((current) =>
+          current.map((item) =>
+            item.questionId === notification.questionId
+              ? { ...item, read: true }
+              : item,
+          ),
+        );
+      } catch {
+        // 상세 페이지는 읽음 처리 실패와 관계없이 확인할 수 있다.
+      }
+    }
+    setNotificationOpen(false);
+    navigate(`/community/qna/${notification.questionId}`);
+  }
   return (
     <header className="topbar">
       <button
@@ -449,10 +494,62 @@ function Header({
           })}
         </span>
         {user ? (
-          <button className="user-chip" onClick={() => navigate("/account")}>
-            <span>{user.fullName?.charAt(0)}</span>
-            {user.fullName}님
-          </button>
+          <div className="header-user-area">
+            <button className="user-chip" onClick={() => navigate("/account")}>
+              <span>{user.fullName?.charAt(0)}</span>
+              {user.fullName}님
+            </button>
+            <button
+              className="notification-button"
+              type="button"
+              aria-label={`답변 알림${unreadCount ? ` ${unreadCount}개` : ""}`}
+              aria-expanded={notificationOpen}
+              onClick={() => setNotificationOpen((open) => !open)}
+            >
+              <Bell size={19} />
+              {unreadCount > 0 && (
+                <span className="notification-badge">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+            {notificationOpen && (
+              <div className="notification-panel">
+                <div className="notification-panel-title">
+                  <strong>답변 알림</strong>
+                  <span>
+                    {unreadCount ? `새 알림 ${unreadCount}개` : "모두 확인함"}
+                  </span>
+                </div>
+                {notifications.length ? (
+                  <div className="notification-list">
+                    {notifications.map((notification) => (
+                      <button
+                        type="button"
+                        className={notification.read ? "read" : "unread"}
+                        key={notification.questionId}
+                        onClick={() => openNotification(notification)}
+                      >
+                        <span className="notification-dot" />
+                        <span>
+                          <strong>{notification.questionTitle}</strong>
+                          <small>{notification.answerPreview}</small>
+                          <em>
+                            {notification.answerAuthor} ·{" "}
+                            {shortDate(notification.answeredAt)}
+                          </em>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="notification-empty">
+                    아직 도착한 답변이 없습니다.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <button className="button button-dark compact" onClick={openAuth}>
@@ -3442,6 +3539,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
   const [error, setError] = useState("");
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
   const [phoneVerification, setPhoneVerification] = useState(null);
+  const [policyKind, setPolicyKind] = useState(null);
   const update = (event) => {
     setForm((previous) => ({
       ...previous,
@@ -3492,182 +3590,209 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
     }
   }
   return (
-    <div className="modal-backdrop" onMouseDown={close}>
-      <div
-        className="modal auth-modal"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <button className="modal-close" onClick={close} aria-label="닫기">
-          <X size={20} />
-        </button>
-        <span className="auth-mark">
-          <Navigation size={24} fill="currentColor" />
-        </span>
-        <span className="eyebrow">WELCOME TO SPORTMAP</span>
-        <h2>
-          {mode === "login" ? "다시 만나서 반가워요." : "함께 움직여 볼까요?"}
-        </h2>
-        <p>
-          {mode === "login"
-            ? "운동을 시작하는 가장 쉬운 방법, SportMap."
-            : "몇 가지 정보만 입력하면 시작할 수 있어요."}
-        </p>
-        <form onSubmit={submit}>
-          {mode === "signup" && (
-            <>
-              <label>
-                성명
-                <input
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={update}
-                  required
-                  maxLength={50}
-                  placeholder="홍길동"
-                  lang="ko"
-                />
-              </label>
-            </>
-          )}
-          <label>
-            아이디
-            <input
-              name="username"
-              value={form.username}
-              onChange={update}
-              required
-              minLength={4}
-              maxLength={30}
-              pattern={
-                mode === "signup" ? "[A-Za-z][A-Za-z0-9_]{3,29}" : undefined
-              }
-              title={
-                mode === "signup"
-                  ? "영문자로 시작하는 영문·숫자·밑줄 4~30자"
-                  : undefined
-              }
-              placeholder="영문자로 시작하는 아이디"
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              lang="en"
-              inputMode="text"
-            />
+    <>
+      <div className="modal-backdrop" onMouseDown={close}>
+        <div
+          className="modal auth-modal"
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <button className="modal-close" onClick={close} aria-label="닫기">
+            <X size={20} />
+          </button>
+          <span className="auth-mark">
+            <Navigation size={24} fill="currentColor" />
+          </span>
+          <span className="eyebrow">WELCOME TO SPORTMAP</span>
+          <h2>
+            {mode === "login" ? "다시 만나서 반가워요." : "함께 움직여 볼까요?"}
+          </h2>
+          <p>
+            {mode === "login"
+              ? "운동을 시작하는 가장 쉬운 방법, SportMap."
+              : "몇 가지 정보만 입력하면 시작할 수 있어요."}
+          </p>
+          <form onSubmit={submit}>
             {mode === "signup" && (
-              <small className="input-hint">
-                영문자로 시작하고 영문·숫자·_만 사용해 주세요. 한글 입력
-                상태라면 한/영 키로 전환해 주세요.
-              </small>
-            )}
-          </label>
-          <label>
-            비밀번호
-            <input
-              name="password"
-              value={form.password}
-              onChange={update}
-              required
-              minLength={mode === "signup" ? 8 : undefined}
-              maxLength={72}
-              type="password"
-              placeholder="비밀번호를 입력하세요"
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-            />
-          </label>
-          {mode === "signup" && (
-            <>
-              <div className="form-two">
+              <>
                 <label>
-                  생년월일
+                  성명
                   <input
-                    name="birthDate"
-                    value={form.birthDate}
+                    name="fullName"
+                    value={form.fullName}
                     onChange={update}
                     required
-                    type="date"
-                    max={new Date().toISOString().slice(0, 10)}
+                    maxLength={50}
+                    placeholder="홍길동"
+                    lang="ko"
                   />
                 </label>
-                <label>
-                  성별
-                  <select name="gender" value={form.gender} onChange={update}>
-                    <option value="OTHER">기타</option>
-                    <option value="MALE">남성</option>
-                    <option value="FEMALE">여성</option>
-                  </select>
+              </>
+            )}
+            <label>
+              아이디
+              <input
+                name="username"
+                value={form.username}
+                onChange={update}
+                required
+                minLength={4}
+                maxLength={30}
+                pattern={
+                  mode === "signup" ? "[A-Za-z][A-Za-z0-9_]{3,29}" : undefined
+                }
+                title={
+                  mode === "signup"
+                    ? "영문자로 시작하는 영문·숫자·밑줄 4~30자"
+                    : undefined
+                }
+                placeholder="영문자로 시작하는 아이디"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                lang="en"
+                inputMode="text"
+              />
+              {mode === "signup" && (
+                <small className="input-hint">
+                  영문자로 시작하고 영문·숫자·_만 사용해 주세요. 한글 입력
+                  상태라면 한/영 키로 전환해 주세요.
+                </small>
+              )}
+            </label>
+            <label>
+              비밀번호
+              <input
+                name="password"
+                value={form.password}
+                onChange={update}
+                required
+                minLength={mode === "signup" ? 8 : undefined}
+                maxLength={72}
+                type="password"
+                placeholder="비밀번호를 입력하세요"
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+              />
+            </label>
+            {mode === "signup" && (
+              <>
+                <div className="form-two">
+                  <label>
+                    생년월일
+                    <input
+                      name="birthDate"
+                      value={form.birthDate}
+                      onChange={update}
+                      required
+                      type="date"
+                      max={new Date().toISOString().slice(0, 10)}
+                    />
+                  </label>
+                  <label>
+                    성별
+                    <select name="gender" value={form.gender} onChange={update}>
+                      <option value="OTHER">기타</option>
+                      <option value="MALE">남성</option>
+                      <option value="FEMALE">여성</option>
+                    </select>
+                  </label>
+                </div>
+                <EmailVerificationField
+                  value={form.email}
+                  onChange={(email) =>
+                    setForm((previous) => ({ ...previous, email }))
+                  }
+                  onVerified={setEmailVerificationToken}
+                />
+                <PhoneVerificationField
+                  value={form.phoneNumber}
+                  onChange={(phoneNumber) =>
+                    setForm((previous) => ({ ...previous, phoneNumber }))
+                  }
+                  onVerified={setPhoneVerification}
+                />
+                <label className="consent-check">
+                  <input type="checkbox" required />{" "}
+                  <span>
+                    <button
+                      type="button"
+                      onClick={() => setPolicyKind("privacy")}
+                    >
+                      개인정보처리방침
+                    </button>
+                    과{" "}
+                    <button
+                      type="button"
+                      onClick={() => setPolicyKind("terms")}
+                    >
+                      이용약관
+                    </button>
+                    에 동의합니다.
+                  </span>
                 </label>
-              </div>
-              <EmailVerificationField
-                value={form.email}
-                onChange={(email) =>
-                  setForm((previous) => ({ ...previous, email }))
-                }
-                onVerified={setEmailVerificationToken}
-              />
-              <PhoneVerificationField
-                value={form.phoneNumber}
-                onChange={(phoneNumber) =>
-                  setForm((previous) => ({ ...previous, phoneNumber }))
-                }
-                onVerified={setPhoneVerification}
-              />
-              <label className="consent-check">
-                <input type="checkbox" required />{" "}
-                <span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      close();
-                      window.history.pushState({}, "", "/privacy");
-                      window.dispatchEvent(new PopStateEvent("popstate"));
-                    }}
-                  >
-                    개인정보처리방침
-                  </button>
-                  과{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      close();
-                      window.history.pushState({}, "", "/terms");
-                      window.dispatchEvent(new PopStateEvent("popstate"));
-                    }}
-                  >
-                    이용약관
-                  </button>
-                  에 동의합니다.
-                </span>
-              </label>
-            </>
-          )}
-          {error && <div className="form-error">{error}</div>}
-          <button className="button button-dark wide" disabled={busy}>
-            {busy ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}{" "}
-            <ArrowRight size={17} />
-          </button>
-        </form>
-        <div className="auth-switch">
-          {mode === "login" ? "처음 오셨나요?" : "이미 계정이 있나요?"}{" "}
-          <button
-            onClick={() => {
-              setEmailVerificationToken("");
-              setPhoneVerification(null);
-              setMode(mode === "login" ? "signup" : "login");
-              setError("");
-            }}
-          >
-            {mode === "login" ? "회원가입하기" : "로그인하기"}
-          </button>
-        </div>
-        {mode === "login" && (
-          <div className="demo-hint">
-            <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
+              </>
+            )}
+            {error && <div className="form-error">{error}</div>}
+            <button className="button button-dark wide" disabled={busy}>
+              {busy ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}{" "}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+          <div className="auth-switch">
+            {mode === "login" ? "처음 오셨나요?" : "이미 계정이 있나요?"}{" "}
+            <button
+              onClick={() => {
+                setEmailVerificationToken("");
+                setPhoneVerification(null);
+                setMode(mode === "login" ? "signup" : "login");
+                setError("");
+              }}
+            >
+              {mode === "login" ? "회원가입하기" : "로그인하기"}
+            </button>
           </div>
-        )}
+          {mode === "login" && (
+            <div className="demo-hint">
+              <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      {policyKind && (
+        <div
+          className="modal-backdrop policy-modal-backdrop"
+          onMouseDown={() => setPolicyKind(null)}
+        >
+          <div
+            className="modal policy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              policyKind === "privacy" ? "개인정보처리방침" : "이용약관"
+            }
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setPolicyKind(null)}
+              aria-label="약관 팝업 닫기"
+            >
+              <X size={20} />
+            </button>
+            <PolicyPage kind={policyKind} />
+            <button
+              type="button"
+              className="button button-dark wide policy-confirm"
+              onClick={() => setPolicyKind(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
