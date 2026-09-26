@@ -1,11 +1,14 @@
 .gradle/
 .gradle-local/
 .gradle-user-home/
+.gradle-user/
 build/
 .idea/
 *.iml
 config/facilities.json
 config/local-secrets.properties
+config/submission-secrets.properties
+backups/
 .env
 sportmap-local.*
 .local-tools/

@@ -23,9 +23,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** 로컬 H2에서 실제 공공 프로그램 자료의 일부를 바로 탐색할 수 있게 적재한다. */
+/** 로컬·제출 환경에서 실제 공공 프로그램 미리보기를 중복 없이 적재한다. */
 @Configuration
-@Profile("local")
+@Profile({ "local", "submission" })
 @ConditionalOnProperty(
   prefix = "app.demo",
   name = "enabled",

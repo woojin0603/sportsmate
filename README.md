@@ -1,5 +1,7 @@
 # SportMap — 공공 체육시설 탐색 서비스
 
+개발 중에는 `tools/start_local.ps1`로 H2를 사용합니다. 제출 환경에서는 `tools/initialize_submission_mysql.ps1`을 한 번 실행한 뒤 `tools/start_submission.ps1`로 MySQL을 사용합니다. 자세한 절차는 [제출용 MySQL 전환 안내](docs/SUBMISSION_MYSQL.md)를 참고하세요.
+
 회원가입에 휴대폰 인증을 추가했습니다. 로컬에서는 실제 SMS 대신 화면의 테스트용 인증번호로 진행합니다. 시연 방법, 보안 제한, 실제 문자 서비스 교체 방법은 [SMS 인증 안내](docs/SMS_VERIFICATION.md)를 참고하세요. 이메일도 로컬에서는 실제 발송 없이 테스트 링크로 인증합니다. 메일 계정 없이 가입 전체를 시연할 수 있으며 [이메일 인증 안내](docs/EMAIL_VERIFICATION.md)에 실제 SMTP 전환 방법을 정리했습니다.
 
 React + Vite 화면은 [frontend/README.md](frontend/README.md)에 실행법과 화면별 API 연결을 정리했습니다. 개발 중에는 Spring Boot 실행 후 `frontend`에서 `npm run dev`를 실행할 수 있습니다. Spring Boot 하나로 화면까지 제공하려면 `frontend`에서 `npm run build:spring`을 실행하고 Spring Boot를 재시작하세요. Vite 산출물 폴더는 `build`가 아니라 `dist`입니다. `http://127.0.0.1:8080/`에서 화면을 확인하고, 직접 입력한 `/programs` 같은 주소도 새로고침되는지 확인할 수 있습니다.
