@@ -124,6 +124,6 @@ for (const [key, count] of counts) {
 }
 const prescriptions = [...cohorts.values()].flatMap((list) => list.filter((item) => item.count >= 5).sort((a, b) => b.count - a.count).slice(0, 5));
 const output = { stats, prescriptions, centers: [...centers.values()] };
-const destination = new URL("../src/main/resources/fitness-prescription-catalog.json", import.meta.url);
+const destination = new URL("../backend/src/main/resources/fitness-prescription-catalog.json", import.meta.url);
 writeFileSync(destination, JSON.stringify(output));
 console.log(`Prescriptions: ${prescriptions.length}; centers: ${centers.size}`);

@@ -9,7 +9,8 @@ from urllib.request import urlretrieve
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = ROOT / ".local-tools" / "tesseract"
+BACKEND = ROOT / "backend"
+TARGET = BACKEND / ".local-tools" / "tesseract"
 INSTALLER_URL = (
     "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.3/"
     "tesseract-ocr-w64-setup-5.5.3.20260724.exe"
@@ -33,7 +34,7 @@ def download_verified(url: str, destination: Path, expected_hash: str) -> None:
 
 def configure_spring() -> None:
     """Point only the local Spring profile to the private, ignored OCR folder."""
-    settings = ROOT / "config" / "local-secrets.properties"
+    settings = BACKEND / "config" / "local-secrets.properties"
     settings.parent.mkdir(parents=True, exist_ok=True)
     existing = settings.read_text(encoding="utf-8") if settings.exists() else ""
     line = "app.fitness.tesseract-command=./.local-tools/tesseract/tesseract.exe"

@@ -8,12 +8,15 @@ Windows의 `MySQL80` 서비스가 실행 중인 상태에서 프로젝트 루트
 powershell -ExecutionPolicy Bypass -File .\tools\initialize_submission_mysql.ps1
 ```
 
-스크립트가 묻는 값은 다음 두 가지입니다.
-
-1. 설치할 때 정한 MySQL `root` 비밀번호
-2. 제출 서버에서 사용할 SportMap 관리자 비밀번호(12자 이상)
+스크립트가 묻는 값은 MySQL 설치 때 정한 `root` 비밀번호입니다. SportMap 관리자 계정은 기존 요구사항에 맞춰 `admin` / `admin1234!`로 초기화됩니다.
 
 입력값은 화면에 표시되지 않습니다. 스크립트는 `sportmap_submission` 데이터베이스, 이 데이터베이스만 사용할 수 있는 `sportmap_app` 계정, 무작위 비밀키, Git에서 제외되는 비밀 설정 파일을 만듭니다. 기존 로컬 설정의 공공 체육시설 API 키도 복사합니다.
+
+관리자 비밀번호를 배포 환경에서 별도로 지정하려면 다음처럼 실행할 수 있습니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\initialize_submission_mysql.ps1 -AdminPassword "새로운-관리자-비밀번호"
+```
 
 ## 실행 모드 전환
 
@@ -42,6 +45,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\backup_submission_mysql.ps1
 
 ## 실제 서버 배포 시
 
-서버에 MySQL이 따로 있으면 `config/submission-secrets.properties`의 URL을 서버 주소로 변경하거나 `DB_URL`, `DB_USER`, `DB_PASSWORD` 환경 변수를 설정합니다. HTTPS 주소가 준비되면 `app.auth.secure-cookie=true` 또는 `SECURE_COOKIE=true`로 바꿉니다.
+서버에 MySQL이 따로 있으면 `backend/config/submission-secrets.properties`의 URL을 서버 주소로 변경하거나 `DB_URL`, `DB_USER`, `DB_PASSWORD` 환경 변수를 설정합니다. HTTPS 주소가 준비되면 `app.auth.secure-cookie=true` 또는 `SECURE_COOKIE=true`로 바꿉니다.
 
-`config/submission-secrets.properties`는 저장소에 커밋하거나 공유하면 안 됩니다. 새 컴퓨터에서는 초기화 스크립트를 다시 실행하거나 서버의 비밀 저장소에서 같은 항목을 주입합니다.
+`backend/config/submission-secrets.properties`는 저장소에 커밋하거나 공유하면 안 됩니다. 새 컴퓨터에서는 초기화 스크립트를 다시 실행하거나 서버의 비밀 저장소에서 같은 항목을 주입합니다.

@@ -2,17 +2,44 @@
 .gradle-local/
 .gradle-user-home/
 .gradle-user/
-build/
+.android-user/
 .idea/
 *.iml
-config/facilities.json
-config/local-secrets.properties
-config/submission-secrets.properties
+/local.properties
+
+# Backend
+backend/.gradle/
+backend/build/
+backend/config/facilities.json
+backend/config/local-secrets.properties
+backend/config/submission-secrets.properties
+backend/sportmap-local.*
+backend/sportmap-mobile-local.*
+backend/.local-tools/
+
+# Web
+web/node_modules/
+web/dist/
+web/.vite/
+web/.env.local
+
+# Android
+android/local.properties
+android/.gradle/
+android/.idea/
+android/.keys/
+android/app/build/
+
+# Generated and private files
+build/
 backups/
+outputs/*.apk
 .env
 sportmap-local.*
+sportmap-mobile-local.*
 .local-tools/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
 *.log
+
+# Codex build verification caches
+**/.gradle-codex/
+android/.android-codex/

@@ -36,7 +36,7 @@
 }
 ```
 
-PDF는 10MB·5쪽 이하만 처리합니다. 텍스트형 PDF는 PDFBox로 추출합니다. 이미지 스캔본은 서버에 [Tesseract OCR](https://github.com/tesseract-ocr/tessdoc) 실행 파일과 [한국어 `kor.traineddata`](https://github.com/tesseract-ocr/tessdata/blob/main/kor.traineddata), 영어 데이터가 설치되어 있어야 합니다. Windows 개발 PC에서는 `python tools/install_ocr.py`를 프로젝트 루트에서 실행하면 공식 배포본과 두 언어 데이터를 `.local-tools/tesseract`에 설치하고, Git에서 제외된 `config/local-secrets.properties`에 실행 경로를 설정합니다. 설치 또는 설정을 바꾼 뒤 Spring Boot를 재시작하세요. 원본 PDF와 OCR 임시 파일은 보관하지 않습니다.
+PDF는 10MB·5쪽 이하만 처리합니다. 텍스트형 PDF는 PDFBox로 추출합니다. 이미지 스캔본은 서버에 [Tesseract OCR](https://github.com/tesseract-ocr/tessdoc) 실행 파일과 [한국어 `kor.traineddata`](https://github.com/tesseract-ocr/tessdata/blob/main/kor.traineddata), 영어 데이터가 설치되어 있어야 합니다. Windows 개발 PC에서는 `python tools/install_ocr.py`를 프로젝트 루트에서 실행하면 공식 배포본과 두 언어 데이터를 `backend/.local-tools/tesseract`에 설치하고, Git에서 제외된 `backend/config/local-secrets.properties`에 실행 경로를 설정합니다. 설치 또는 설정을 바꾼 뒤 Spring Boot를 재시작하세요. 원본 PDF와 OCR 임시 파일은 보관하지 않습니다.
 
 스캔 이미지의 인식에는 `--psm 6`을 사용하고 한글 음절 사이에 잘못 들어간 공백을 정리합니다. OCR은 결과지의 품질과 서식에 영향을 받으므로 추출된 날짜·종목·수치를 원본과 대조한 뒤 저장해야 합니다.
 

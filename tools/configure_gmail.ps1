@@ -1,5 +1,5 @@
 param(
-  [string]$ConfigPath = "config/local-secrets.properties"
+  [string]$ConfigPath = "backend/config/local-secrets.properties"
 )
 
 $ErrorActionPreference = "Stop"

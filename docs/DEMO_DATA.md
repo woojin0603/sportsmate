@@ -3,7 +3,7 @@
 `local` 프로필로 서버를 실행하면 프로젝트 루트의 H2 파일 DB에 화면 테스트용 데이터가 자동으로 들어갑니다. 데모 데이터는 `mysql` 프로필에는 들어가지 않습니다. 로컬 서버는 `127.0.0.1`에서만 접속됩니다. H2 파일은 서버 재시작 후에도 남고 원천 데이터는 중복 적재되지 않습니다. 데모 데이터를 끄려면 `app.demo.enabled=false`로 실행하세요.
 
 ```powershell
-cd 'C:\Users\kwi07\Documents\Codex\2026-09-13\rnr\outputs\sportmap'
+cd backend
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
 ```
 

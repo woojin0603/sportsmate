@@ -1,1 +1,4 @@
-rootProject.name = 'sportmap'
+rootProject.name = 'sportmap-monorepo'
+
+// 백엔드를 독립 Gradle 빌드로 유지하면서 루트에서 함께 불러온다.
+includeBuild('backend')

@@ -1,6 +1,6 @@
 """Collect one public API into normalized facility records.
 
-Usage: python tools/collect.py config/facilities.example.json
+Usage: python tools/collect.py backend/config/facilities.example.json
 The config's field map must be checked against the provider's actual response schema.
 """
 import json

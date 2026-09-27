@@ -4,7 +4,7 @@
 
 ## 시연 순서
 
-1. 서버를 재시작합니다. Spring 화면만 사용하면 `http://127.0.0.1:8080`, Vite 개발 화면은 `http://127.0.0.1:5173`을 사용합니다. React를 수정한 후 Spring 화면에 반영하려면 `frontend`에서 `npm run build:spring`을 실행하고 서버를 재시작합니다.
+1. 서버를 재시작합니다. Spring 화면만 사용하면 `http://127.0.0.1:8080`, Vite 개발 화면은 `http://127.0.0.1:5173`을 사용합니다. React를 수정한 후 Spring 화면에 반영하려면 `web`에서 `npm run build:spring`을 실행하고 서버를 재시작합니다.
 2. 회원가입에 아직 가입하지 않은 이메일 형식의 주소(예: `demo@example.com`)를 입력하고 **이메일 인증하기**를 누릅니다. SMTP 계정은 필요 없습니다.
 3. **실제 이메일은 발송되지 않습니다** 안내 아래의 **테스트용 이메일 인증 링크 열기**를 누릅니다.
 4. 새 탭에서 **이메일 인증 완료**를 확인하고 원래 회원가입 탭으로 돌아옵니다. 약 2.5초 간격의 상태 확인으로 인증 완료가 표시됩니다.
@@ -34,6 +34,7 @@ $env:MAIL_PORT='587'
 $env:MAIL_USERNAME='발송 계정'
 $env:MAIL_PASSWORD='SMTP 비밀번호 또는 앱 비밀번호'
 $env:MAIL_FROM='noreply@example.com'
+cd backend
 .\gradlew.bat bootRun
 ```
 
@@ -53,4 +54,4 @@ $env:MAIL_FROM='noreply@example.com'
 - `email_verifications.mock_delivery` 열이 추가됩니다. 로컬 `ddl-auto=update`는 자동 반영하며, 스키마 `validate`를 사용하는 환경은 먼저 nullable boolean 열을 마이그레이션해야 합니다. 기존 null 값은 재인증 대상입니다.
 - 이메일 발송 제한은 기존 이메일별 60초 간격입니다. SMS의 전체/IP별 발송량 제한과는 별개입니다. 실제 공개 서비스 전에는 이메일 공급자 발송 한도, 요청 IP별 제한 및 남용 방지를 추가 구성하세요.
 
-`./gradlew.bat test`로 정상 흐름, 만료·재발송·재사용, 모의/실제 모드 분리, SMTP 실패 처리, CSRF, 이메일+SMS 인증 후 가입·로그인을 검증합니다. 테스트는 메모리 DB와 모의 SMTP 전송을 사용합니다.
+`cd backend; ./gradlew.bat test`로 정상 흐름, 만료·재발송·재사용, 모의/실제 모드 분리, SMTP 실패 처리, CSRF, 이메일+SMS 인증 후 가입·로그인을 검증합니다. 테스트는 메모리 DB와 모의 SMTP 전송을 사용합니다.

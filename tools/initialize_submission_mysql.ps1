@@ -1,5 +1,6 @@
 param(
-  [string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin"
+  [string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin",
+  [string]$AdminPassword = "admin1234!"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,8 +35,7 @@ function Escape-PropertyValue([string]$value) {
 
 Write-Host "SportMap 제출용 MySQL을 초기화합니다." -ForegroundColor Cyan
 $rootPassword = ConvertFrom-SecureValue (Read-Host "MySQL root 비밀번호" -AsSecureString)
-$adminPassword = ConvertFrom-SecureValue (Read-Host "제출용 SportMap admin 비밀번호" -AsSecureString)
-if ($adminPassword.Length -lt 12) { throw "관리자 비밀번호는 12자 이상으로 입력해 주세요." }
+if ([string]::IsNullOrWhiteSpace($AdminPassword)) { throw "관리자 비밀번호가 비어 있습니다." }
 
 $databasePassword = New-RandomSecret 30
 $jwtSecret = New-RandomSecret 48
@@ -67,8 +67,8 @@ FLUSH PRIVILEGES;
   Get-Content -LiteralPath $tempSql -Raw | & $mysql "--defaults-extra-file=$tempClient"
   if ($LASTEXITCODE -ne 0) { throw "MySQL 데이터베이스 생성에 실패했습니다." }
 
-  $secretPath = Join-Path $projectRoot "config\submission-secrets.properties"
-  $localSecretPath = Join-Path $projectRoot "config\local-secrets.properties"
+  $secretPath = Join-Path $projectRoot "backend\config\submission-secrets.properties"
+  $localSecretPath = Join-Path $projectRoot "backend\config\local-secrets.properties"
   $publicApiSetting = ""
   if (Test-Path -LiteralPath $localSecretPath) {
     $publicApiLine = Get-Content -LiteralPath $localSecretPath | Where-Object {
@@ -85,7 +85,7 @@ spring.datasource.password=$databasePassword
 app.auth.jwt-secret=$jwtSecret
 app.auth.secure-cookie=false
 app.admin.seed-enabled=true
-app.admin.initial-password=$(Escape-PropertyValue $adminPassword)
+app.admin.initial-password=$(Escape-PropertyValue $AdminPassword)
 app.import-key=$importKey$publicApiSetting
 "@ | Set-Content -LiteralPath $secretPath -Encoding utf8
 

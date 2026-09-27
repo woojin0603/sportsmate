@@ -1,24 +1,40 @@
-# SportMap — 공공 체육시설 탐색 서비스
+# SportMap
+
+## 프로젝트 구조
+
+```text
+sportmap/
+├─ backend/   Spring Boot, JPA, Querydsl, H2/MySQL
+├─ web/       React + Vite
+├─ android/   Android WebView 앱
+├─ tools/     공통 실행·빌드·데이터 도구
+├─ docs/      API 및 운영 문서
+└─ outputs/   로컬 빌드 산출물
+```
+
+IntelliJ에서는 `backend/build.gradle`, Android Studio에서는 `android` 폴더를 각각 엽니다. 웹은 `web` 폴더에서 실행합니다. 세 클라이언트는 같은 Spring Boot API를 사용합니다. 저장소 루트의 Gradle Wrapper도 `bootRun`, `test`, `buildBackend` 작업을 백엔드로 위임하므로 기존 루트 터미널 명령도 사용할 수 있습니다. 자세한 관리 방법은 [프로젝트 구조와 유지보수](docs/PROJECT_STRUCTURE.md)를 참고하세요.
 
 개발 중에는 `tools/start_local.ps1`로 H2를 사용합니다. 제출 환경에서는 `tools/initialize_submission_mysql.ps1`을 한 번 실행한 뒤 `tools/start_submission.ps1`로 MySQL을 사용합니다. 자세한 절차는 [제출용 MySQL 전환 안내](docs/SUBMISSION_MYSQL.md)를 참고하세요.
 
+Android 테스트 앱은 `android`에 있습니다. 서버 연결, APK 빌드와 기기 설치 방법은 [Android 테스트 앱 안내](android/README.md)를 참고하세요.
+
 회원가입에 휴대폰 인증을 추가했습니다. 로컬에서는 실제 SMS 대신 화면의 테스트용 인증번호로 진행합니다. 시연 방법, 보안 제한, 실제 문자 서비스 교체 방법은 [SMS 인증 안내](docs/SMS_VERIFICATION.md)를 참고하세요. 이메일도 로컬에서는 실제 발송 없이 테스트 링크로 인증합니다. 메일 계정 없이 가입 전체를 시연할 수 있으며 [이메일 인증 안내](docs/EMAIL_VERIFICATION.md)에 실제 SMTP 전환 방법을 정리했습니다.
 
-React + Vite 화면은 [frontend/README.md](frontend/README.md)에 실행법과 화면별 API 연결을 정리했습니다. 개발 중에는 Spring Boot 실행 후 `frontend`에서 `npm run dev`를 실행할 수 있습니다. Spring Boot 하나로 화면까지 제공하려면 `frontend`에서 `npm run build:spring`을 실행하고 Spring Boot를 재시작하세요. Vite 산출물 폴더는 `build`가 아니라 `dist`입니다. `http://127.0.0.1:8080/`에서 화면을 확인하고, 직접 입력한 `/programs` 같은 주소도 새로고침되는지 확인할 수 있습니다.
+React + Vite 화면은 [web/README.md](web/README.md)에 실행법과 화면별 API 연결을 정리했습니다. 개발 중에는 Spring Boot 실행 후 `web`에서 `npm run dev`를 실행할 수 있습니다. Spring Boot 하나로 화면까지 제공하려면 `web`에서 `npm run build:spring`을 실행하고 Spring Boot를 재시작하세요. Vite 산출물 폴더는 `build`가 아니라 `dist`입니다. `http://127.0.0.1:8080/`에서 화면을 확인하고, 직접 입력한 `/programs` 같은 주소도 새로고침되는지 확인할 수 있습니다.
 
 국민체력100 PDF 업로드와 A~D 참고 평가는 [docs/FITNESS_ASSESSMENT.md](docs/FITNESS_ASSESSMENT.md)에 기준·API·OCR 설치 조건을 정리했습니다. 백엔드를 다시 실행해야 새 API와 `age` 응답 필드가 적용됩니다.
 
 결과지가 없는 사용자는 `/fitness` 화면의 **국민체력100 측정 예약하기** 버튼으로 공식 [체력측정 예약 페이지](https://nfa.kspo.or.kr/reserve/selectReserveStep1.kspo)를 새 탭에서 열 수 있습니다. 공식 홈페이지에서 별도 회원가입·로그인이 필요할 수 있으며, SportMap은 예약을 대신 확정하지 않습니다.
 
-Windows에서 스캔본 PDF를 시험하려면 프로젝트 루트에서 `python tools/install_ocr.py`를 한 번 실행하고 Spring Boot를 재시작하세요. OCR 실행 파일과 언어 데이터는 `.local-tools/`에 설치되며 Git에서 제외됩니다.
+Windows에서 스캔본 PDF를 시험하려면 프로젝트 루트에서 `python tools/install_ocr.py`를 한 번 실행하고 Spring Boot를 재시작하세요. OCR 실행 파일과 언어 데이터는 `backend/.local-tools/`에 설치되며 Git에서 제외됩니다.
 
 수정된 관계도는 [docs/ERD.md](docs/ERD.md)에 있습니다.
 
-Java 17, Spring Boot 3.3, JPA, Querydsl, H2/MySQL 기반 시작 프로젝트입니다. `build.gradle`을 IntelliJ의 Gradle 프로젝트로 열 수 있습니다.
+Java 17, Spring Boot 3.3, JPA, Querydsl, H2/MySQL 기반 시작 프로젝트입니다. `backend/build.gradle`을 IntelliJ의 Gradle 프로젝트로 열 수 있습니다.
 
 회원가입에는 이메일 인증이 필요합니다. 기본 로컬 모드에서는 SMTP 설정 없이 **테스트용 이메일 인증 링크 열기**로 인증할 수 있습니다. 실제 메일을 보내려면 `EMAIL_MODE=live`와 공개 HTTPS 주소 `MAIL_PUBLIC_BASE_URL`, 아래 SMTP 환경변수를 설정하세요. 원래 회원가입 화면이 인증 완료 상태를 자동 확인합니다. 실제 모드에서 SMTP 설정이 없으면 발송 API는 503을 반환합니다. 메일 계정의 비밀번호는 저장소나 React 코드에 넣지 않습니다.
 
-로컬 IntelliJ 실행에서는 [`config/local-secrets.properties.example`](config/local-secrets.properties.example)을 참고해 Git에서 제외된 `config/local-secrets.properties`에 같은 항목을 추가할 수도 있습니다. Gmail은 일반 로그인 비밀번호가 아니라 Google 계정의 2단계 인증에서 발급한 앱 비밀번호를 사용해야 합니다.
+로컬 IntelliJ 실행에서는 [`backend/config/local-secrets.properties.example`](backend/config/local-secrets.properties.example)을 참고해 Git에서 제외된 `backend/config/local-secrets.properties`에 같은 항목을 추가할 수도 있습니다. Gmail은 일반 로그인 비밀번호가 아니라 Google 계정의 2단계 인증에서 발급한 앱 비밀번호를 사용해야 합니다.
 
 Windows에서는 프로젝트 루트에서 `powershell -ExecutionPolicy Bypass -File tools/configure_gmail.ps1`을 실행하면 Gmail 주소와 앱 비밀번호를 화면에 노출하지 않고 입력할 수 있습니다. 설정 후 Spring Boot를 완전히 재시작해야 합니다.
 
@@ -34,7 +50,7 @@ $env:MAIL_FROM='noreply@example.com'
 
 가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 로컬 모드에서는 테스트 링크가 표시되고 실제 모드에서는 메일이 발송됩니다. 메일의 인증 버튼을 발송 후 10분 안에 누르고 휴대폰 인증까지 완료한 뒤 회원가입할 수 있습니다. 이메일 재발송은 1분 뒤 가능합니다. 기존 데모 계정의 로그인에는 영향을 주지 않습니다.
 
-로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 미리보기와 해당 시설을 적재할 수 있습니다. 테스트 회원·게시글 자동 생성은 비활성화했습니다. 로컬 H2는 프로젝트 루트의 `sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다.
+로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 미리보기와 해당 시설을 적재할 수 있습니다. 테스트 회원·게시글 자동 생성은 비활성화했습니다. 로컬 H2는 `backend/sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다.
 
 ## ERD 수정 요약
 
@@ -61,12 +77,13 @@ $env:MAIL_FROM='noreply@example.com'
 5. 공공체육시설 프로그램정보 → `programs`. 제공된 대용량 JSON의 시설명·주소·지역과 강좌 기간·시간·정원·요금을 별도 수집기로 적재합니다.
 6. 전국공공체육시설 데이터 → `facilities`, `facility_sources`. 2번과 주소·명칭·좌표 기준으로 중복 판정해야 합니다.
 
-시설 수집 설정 `config/facilities.example.json`은 [전국체육시설 정보 API](https://www.data.go.kr/data/15113986/openapi.do)의 실제 URL과 확인된 응답 필드로 채웠습니다. 이 API에는 행정구역 코드가 없어 현재 `cp_nm`(시도명)을 임시 지역 키로 사용합니다. 공식 행정구역 코드를 추가할 때 지역 정규화가 필요합니다. 제공된 프로그램 JSON은 `tools/import_programs.py`로 적재할 수 있습니다. 통계·추천 데이터의 별도 매퍼는 아직 구현되지 않았습니다.
+시설 수집 설정 `backend/config/facilities.example.json`은 [전국체육시설 정보 API](https://www.data.go.kr/data/15113986/openapi.do)의 실제 URL과 확인된 응답 필드로 채웠습니다. 이 API에는 행정구역 코드가 없어 현재 `cp_nm`(시도명)을 임시 지역 키로 사용합니다. 공식 행정구역 코드를 추가할 때 지역 정규화가 필요합니다. 제공된 프로그램 JSON은 `tools/import_programs.py`로 적재할 수 있습니다. 통계·추천 데이터의 별도 매퍼는 아직 구현되지 않았습니다.
 
 ## 실행
 
 ```powershell
-# IntelliJ에서 build.gradle을 열거나
+# IntelliJ에서 backend/build.gradle을 열거나
+cd backend
 .\gradlew.bat bootRun
 # MySQL: 데이터베이스 sportmap을 먼저 생성하고 환경변수 설정
 $env:SPRING_PROFILES_ACTIVE='mysql'
@@ -75,6 +92,7 @@ $env:DB_USER='sportmap'
 $env:DB_PASSWORD='...'
 $env:JWT_SECRET='32바이트-이상의-임의-비밀값을-설정하세요'
 $env:IMPORT_KEY='긴-임의의-비밀키'
+cd backend
 .\gradlew.bat bootRun
 ```
 
@@ -82,11 +100,11 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
 
 맞춤 운동은 로그인한 회원의 만 나이로 자동 조회합니다. 상단의 **다른 연령대 추천운동 보기**를 누르면 나이·BMI·성별·체력 등급을 직접 선택할 수 있고, **내 나이 기준으로 보기**로 기본 추천에 돌아갈 수 있습니다. 비로그인 상태에서는 기존 조건 선택창을 표시합니다. BMI·체력 등급은 회원 정보에 없으므로 기본 조건임을 안내합니다.
 
-연령별 운동정보 CSV 5,040건은 `src/main/resources/age-exercise-recommendations.json`에 포함했습니다. 서버 첫 실행 시 `exercise_recommendations`에 한 번 적재하며, `/recommendations` 화면에서 연령·BMI 분류·성별·체력 등급을 선택하면 준비운동→본운동→마무리운동 순으로 각 단계 5개씩 표시합니다. API 예시: `GET /api/recommendations?age=30&bmi=정상&sex=F&grade=참가증`. CSV의 `COAW_FLAG_NM` 값(1·2·3등급, 참가증)을 그대로 사용하며, PDF 평가의 A~D 등급과 동일한 척도로 간주하지 않습니다. 원본에 10대 미만 추천은 없고 `70대 이상`은 조회 상한인 120세까지 적용했습니다.
+연령별 운동정보 CSV 5,040건은 `backend/src/main/resources/age-exercise-recommendations.json`에 포함했습니다. 서버 첫 실행 시 `exercise_recommendations`에 한 번 적재하며, `/recommendations` 화면에서 연령·BMI 분류·성별·체력 등급을 선택하면 준비운동→본운동→마무리운동 순으로 각 단계 5개씩 표시합니다. API 예시: `GET /api/recommendations?age=30&bmi=정상&sex=F&grade=참가증`. CSV의 `COAW_FLAG_NM` 값(1·2·3등급, 참가증)을 그대로 사용하며, PDF 평가의 A~D 등급과 동일한 척도로 간주하지 않습니다. 원본에 10대 미만 추천은 없고 `70대 이상`은 조회 상한인 120세까지 적용했습니다.
 
-추가 제공된 체력측정 운동처방 JSON은 `tools/build_fitness_prescriptions.mjs`로 익명 집계했습니다. 일반 처방(2026년 3~7월), 장애인 처방(2025년 8~12월), 지역 체력측정 처방(2026년 7월 배포본)을 각각 분리합니다. 지역 데이터의 2025년 7월·2026년 2월 파일은 7월 배포본과 시작 기록이 겹치는 누적 스냅샷이므로 중복 집계를 피하려고 최신 배포본만 집계했습니다. 원본의 회원 식별자·개별 검사 수치·측정일은 프로젝트에 넣지 않았고, 연령대·성별·공식 등급·장애 유형별로 **같은 처방이 5건 이상인 경우** 빈도 상위 사례만 `src/main/resources/fitness-prescription-catalog.json`에 보관합니다. `/recommendations` 화면의 처방 사례는 통계적 참고자료이며 개인별 처방이나 PDF 평가의 A~D 등급과 직접 연결하지 않습니다. `GET /api/fitness/prescriptions?age=30&source=GENERAL&sex=F`로 조회할 수 있습니다.
+추가 제공된 체력측정 운동처방 JSON은 `tools/build_fitness_prescriptions.mjs`로 익명 집계했습니다. 일반 처방(2026년 3~7월), 장애인 처방(2025년 8~12월), 지역 체력측정 처방(2026년 7월 배포본)을 각각 분리합니다. 지역 데이터의 2025년 7월·2026년 2월 파일은 7월 배포본과 시작 기록이 겹치는 누적 스냅샷이므로 중복 집계를 피하려고 최신 배포본만 집계했습니다. 원본의 회원 식별자·개별 검사 수치·측정일은 프로젝트에 넣지 않았고, 연령대·성별·공식 등급·장애 유형별로 **같은 처방이 5건 이상인 경우** 빈도 상위 사례만 `backend/src/main/resources/fitness-prescription-catalog.json`에 보관합니다. `/recommendations` 화면의 처방 사례는 통계적 참고자료이며 개인별 처방이나 PDF 평가의 A~D 등급과 직접 연결하지 않습니다. `GET /api/fitness/prescriptions?age=30&source=GENERAL&sex=F`로 조회할 수 있습니다.
 
-지역 체력측정 자료에서 체력인증센터의 명칭·주소·연락처·운영시간 79곳을 추출했습니다. `/fitness-centers` 화면에서 `시·도 → 시·군·구 → 하위 구역` 순서로 검색할 수 있고, `GET /api/fitness/centers?province=경기도&city=수원시&locality=영통구` API도 제공합니다. 지역 선택지는 `GET /api/fitness/centers/regions`에서 조회합니다. 원본 좌표와 연락처는 최신 정보와 다를 수 있으므로 방문 전에 센터에 확인해야 합니다. 원본 파일을 다시 집계하려면 `node tools/build_fitness_prescriptions.mjs "<JSON 파일 폴더>"`를 실행하고, React 변경사항은 `frontend`에서 `npm run build:spring`으로 반영하세요.
+지역 체력측정 자료에서 체력인증센터의 명칭·주소·연락처·운영시간 79곳을 추출했습니다. `/fitness-centers` 화면에서 `시·도 → 시·군·구 → 하위 구역` 순서로 검색할 수 있고, `GET /api/fitness/centers?province=경기도&city=수원시&locality=영통구` API도 제공합니다. 지역 선택지는 `GET /api/fitness/centers/regions`에서 조회합니다. 원본 좌표와 연락처는 최신 정보와 다를 수 있으므로 방문 전에 센터에 확인해야 합니다. 원본 파일을 다시 집계하려면 `node tools/build_fitness_prescriptions.mjs "<JSON 파일 폴더>"`를 실행하고, React 변경사항은 `web`에서 `npm run build:spring`으로 반영하세요.
 
 센터 79곳 모두 원본의 `REPRSNT_TEL_NO` 전화번호가 있으며, 센터 화면에서 하이픈을 넣어 표시하고 누르면 전화 앱으로 연결합니다. 지역·센터명뿐 아니라 전화번호 숫자로도 검색할 수 있습니다. 출장 센터 중에는 본 센터와 같은 대표번호를 사용하는 곳이 있습니다.
 
@@ -131,7 +149,7 @@ $env:IMPORT_KEY='긴-임의의-비밀키'
 
 ### 제공된 공공 프로그램 JSON 적재
 
-화면 확인용 미리보기 240건은 `src/main/resources/public-programs-preview.json`에 포함되어 있어 별도 적재 작업 없이 `/programs`와 시설 목록에서 조회할 수 있습니다. 이 자료는 파일 배포 시점의 정보이므로 현재 운영·접수 상태를 보장하지 않습니다. 미리보기를 다시 만들려면 `python tools/build_sample_programs.py <원본 JSON 경로> src/main/resources/public-programs-preview.json`을 실행하세요. 원본 파일 전체를 사용하려면 아래 수집기를 실행합니다.
+화면 확인용 미리보기 240건은 `backend/src/main/resources/public-programs-preview.json`에 포함되어 있어 별도 적재 작업 없이 `/programs`와 시설 목록에서 조회할 수 있습니다. 이 자료는 파일 배포 시점의 정보이므로 현재 운영·접수 상태를 보장하지 않습니다. 미리보기를 다시 만들려면 `python tools/build_sample_programs.py <원본 JSON 경로> backend/src/main/resources/public-programs-preview.json`을 실행하세요. 원본 파일 전체를 사용하려면 아래 수집기를 실행합니다.
 
 `KS_PUBLIC_ALSFC_PROGRM_INFO_202607.json`은 약 900MB, 396,693건이며 2024~2026년 프로그램이 섞여 있습니다. 서버에 `IMPORT_KEY`를 설정한 후 별도 터미널에서 같은 값을 설정하고 다음 명령을 실행하세요. 수집기는 파일을 한 줄씩 읽어 메모리 사용을 제한하며, 기본으로 종료된 프로그램을 건너뜁니다. 전체 적재에는 상당한 시간이 걸리므로 먼저 `--limit 20`으로 확인하세요.
 
@@ -144,18 +162,27 @@ python tools/import_programs.py 'C:\Users\kwi07\OneDrive\Desktop\mysports\KS_PUB
 
 ### 체육시설 공공데이터 실시간 조회
 
-로컬 IntelliJ 실행에서는 Git에서 제외된 `config/local-secrets.properties`를 자동으로 읽습니다. 제공받은 인증키는 해당 파일에만 저장되어 있으며, 설정 변경 후에는 Spring Boot 서버를 다시 시작해야 합니다. 프로젝트를 공유할 때 이 파일은 제외하세요. IntelliJ 실행 구성의 작업 디렉터리는 프로젝트 루트(`sportmap`)로 설정합니다. 환경변수 `PUBLIC_FACILITY_SERVICE_KEY`를 사용하는 방법도 그대로 지원합니다.
+로컬 IntelliJ 실행에서는 Git에서 제외된 `backend/config/local-secrets.properties`를 자동으로 읽습니다. 제공받은 인증키는 해당 파일에만 저장되어 있으며, 설정 변경 후에는 Spring Boot 서버를 다시 시작해야 합니다. 프로젝트를 공유할 때 이 파일은 제외하세요. IntelliJ 실행 구성의 작업 디렉터리는 저장소 루트인 `sportmap`으로 설정합니다. 환경변수 `PUBLIC_FACILITY_SERVICE_KEY`를 사용하는 방법도 그대로 지원합니다.
+
+Git에서 새로 받은 프로젝트나 새 컴퓨터에서는 프로젝트 루트에서 아래 스크립트를 한 번 실행해 인증키를 입력합니다. 입력한 키는 화면에 표시되지 않으며 Git에서 제외된 로컬 설정 파일에 저장됩니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\configure_public_api.ps1
+```
+
+Android 앱은 공공데이터 인증키를 APK에 저장하지 않고 연결된 Spring Boot 서버의 API를 사용합니다. 따라서 앱이 연결된 서버에 위 로컬 설정이나 `PUBLIC_FACILITY_SERVICE_KEY` 환경변수가 있어야 합니다. URL로 배포할 때도 배포 서비스의 Secret/Environment Variables에 같은 이름으로 키를 등록하면 실시간 조회가 정상 동작합니다.
 
 기본 요청주소는 제공된 서비스 주소에 작업 경로를 붙인 `https://apis.data.go.kr/B551014/SRVC_API_SFMS_FACI/TODZ_API_SFMS_FACI`입니다. 기본 서비스 주소만 호출하면 오류 코드 12가 반환되어 작업 경로를 추가했습니다. Java 서비스와 Python 수집기에서 HTTPS 응답 `resultCode=00`을 확인했습니다. `PUBLIC_FACILITY_SERVICE_KEY`에 발급받은 인증키를 환경변수로 설정합니다. 인증키는 인코딩된 형태 또는 원문 형태 모두 사용할 수 있으며 저장소에 넣지 않습니다.
 
 ```powershell
 $env:PUBLIC_FACILITY_SERVICE_KEY='발급받은-인증키'
+cd backend
 .\gradlew.bat bootRun
 ```
 
 `GET /api/facilities/external?pageNo=1&numOfRows=10&faci_nm=센터럴 피트니스&faci_gb_nm=신고&fcob_nm=체력단련장업&ftype_nm=체력단련장&cp_nm=서울특별시&cpb_nm=중구`는 사진의 요청변수명을 그대로 전달합니다. `resultType=JSON`과 `serviceKey`는 서버가 설정합니다. 공공 API 응답은 필드 명세가 확인될 때까지 원형 JSON으로 반환합니다.
 
-수집: `PUBLIC_FACILITY_SERVICE_KEY`, `IMPORT_KEY`를 지정한 다음 `python tools/collect.py config/facilities.example.json`을 실행합니다. 공개 조회 API와 달리 적재 API는 `X-Import-Key` 헤더가 필요하며 키가 비어 있으면 접근할 수 없습니다.
+수집: `PUBLIC_FACILITY_SERVICE_KEY`, `IMPORT_KEY`를 지정한 다음 `python tools/collect.py backend/config/facilities.example.json`을 실행합니다. 공개 조회 API와 달리 적재 API는 `X-Import-Key` 헤더가 필요하며 키가 비어 있으면 접근할 수 없습니다.
 
 회귀 검사는 H2 서버를 띄우고 동일한 `IMPORT_KEY`를 설정한 뒤 `./scripts/smoke.ps1`을 실행합니다. 회원가입·로그인, 시설 재적재/검색, 리뷰, Q&A 대댓글, 예약의 없는 프로그램 처리, 로그아웃을 확인합니다.
 

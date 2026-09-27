@@ -2,7 +2,7 @@ param([string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin")
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$secretPath = Join-Path $projectRoot "config\submission-secrets.properties"
+$secretPath = Join-Path $projectRoot "backend\config\submission-secrets.properties"
 $mysql = Join-Path $MySqlBin "mysql.exe"
 if (-not (Test-Path -LiteralPath $secretPath)) { throw "제출용 비밀 설정이 없습니다." }
 
