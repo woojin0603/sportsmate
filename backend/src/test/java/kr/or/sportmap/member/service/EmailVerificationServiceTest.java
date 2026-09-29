@@ -11,7 +11,6 @@ import java.util.concurrent.*;
 import kr.or.sportmap.member.domain.Member;
 import kr.or.sportmap.member.mail.*;
 import kr.or.sportmap.member.repository.*;
-import kr.or.sportmap.member.sms.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,6 @@ import org.springframework.web.server.ResponseStatusException;
   properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "app.mail.mode=mock",
-    "app.sms.mode=mock",
     "server.address=127.0.0.1",
   },
   showSql = false
@@ -47,9 +45,6 @@ import org.springframework.web.server.ResponseStatusException;
   EmailGateway.class,
   EmailDeliveryConfiguration.class,
   SmtpVerificationEmailSender.class,
-  PhoneVerificationService.class,
-  SmsGateway.class,
-  SmsDeliveryConfiguration.class,
   MemberService.class,
   EmailVerificationServiceTest.Passwords.class,
 })
@@ -72,15 +67,6 @@ class EmailVerificationServiceTest {
   EmailVerificationRepository repository;
 
   @Autowired
-  PhoneVerificationService phones;
-
-  @Autowired
-  PhoneVerificationRepository phoneRepository;
-
-  @Autowired
-  SmsBudgetRepository budgets;
-
-  @Autowired
   MemberService members;
 
   @Autowired
@@ -98,11 +84,6 @@ class EmailVerificationServiceTest {
   @BeforeEach
   void clean() {
     repository.deleteAll();
-    phoneRepository.deleteAll();
-    var budget = budgets.findById(1L).orElseThrow();
-    budget.day = null;
-    budget.sentCount = 0;
-    budgets.saveAndFlush(budget);
   }
 
   private String linkToken(EmailVerificationService.SendResult sent) {
@@ -110,7 +91,7 @@ class EmailVerificationServiceTest {
   }
 
   private EmailVerificationService.SendResult send() {
-    return service.sendLink("demo@example.com");
+    return service.sendLink("demo@example.com", "test-" + System.nanoTime());
   }
 
   private ResponseStatusException rejected(Runnable action) {
@@ -119,7 +100,10 @@ class EmailVerificationServiceTest {
 
   @Test
   void mockUsesNormalConfirmationFlowWithoutSmtp() {
-    var sent = service.sendLink(" Demo@Example.com ");
+    var sent = service.sendLink(
+      " Demo@Example.com ",
+      "test-" + System.nanoTime()
+    );
     assertTrue(sent.mock());
     assertTrue(
       sent
@@ -289,30 +273,10 @@ class EmailVerificationServiceTest {
   }
 
   @Test
-  void completeSignupNeedsBothProofsAndCanLoginWithoutSendingAnything() {
+  void completeSignupNeedsEmailProofAndValidPhoneFormat() {
     var email = send();
     service.confirm(linkToken(email));
     var emailProof = service.status("demo@example.com", email.requestToken());
-    rejected(() ->
-      members.signup(
-        "시연",
-        "email_demo",
-        "Example123!",
-        LocalDate.of(2000, 1, 1),
-        "demo@example.com",
-        emailProof.verificationToken(),
-        "01012345678",
-        null,
-        null,
-        Member.Gender.OTHER
-      )
-    );
-    var phone = phones.send("01012345678", "local-test");
-    var phoneProof = phones.verify(
-      "01012345678",
-      phone.requestToken(),
-      phone.developmentCode()
-    );
     var member = members.signup(
       "시연",
       "email_demo",
@@ -321,8 +285,6 @@ class EmailVerificationServiceTest {
       "demo@example.com",
       emailProof.verificationToken(),
       "01012345678",
-      phone.requestToken(),
-      phoneProof.verificationToken(),
       Member.Gender.OTHER
     );
     assertEquals(member.id, members.login("email_demo", "Example123!").id);

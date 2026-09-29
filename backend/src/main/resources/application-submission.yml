@@ -29,12 +29,13 @@ server:
 
 app:
   auth:
-    secure-cookie: ${SECURE_COOKIE:false}
+    secure-cookie: ${SECURE_COOKIE:true}
   admin:
-    seed-enabled: ${ADMIN_SEED_ENABLED:true}
+    seed-enabled: ${ADMIN_SEED_ENABLED:false}
+    require-strong-password: true
   mail:
-    mode: ${EMAIL_MODE:mock}
+    mode: ${EMAIL_MODE:live}
   sms:
-    mode: ${SMS_MODE:mock}
+    mode: ${SMS_MODE:disabled}
   demo:
     enabled: true

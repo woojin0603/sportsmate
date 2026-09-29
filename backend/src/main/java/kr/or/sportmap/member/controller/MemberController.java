@@ -1,5 +1,6 @@
 package kr.or.sportmap.member.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -52,8 +53,6 @@ public class MemberController {
         request.email(),
         request.emailVerificationToken(),
         request.phoneNumber(),
-        request.phoneRequestToken(),
-        request.phoneVerificationToken(),
         request.gender()
       )
     );
@@ -62,11 +61,17 @@ public class MemberController {
   /** 가입 이메일로 인증 버튼이 포함된 메일을 보낸다. */
   @PostMapping("/email/send")
   public ResponseEntity<EmailVerificationService.SendResult> sendEmailLink(
-    @Valid @RequestBody EmailSendRequest request
+    @Valid @RequestBody EmailSendRequest request,
+    HttpServletRequest servletRequest
   ) {
     return ResponseEntity.ok()
       .cacheControl(CacheControl.noStore())
-      .body(emailVerifications.sendLink(request.email()));
+      .body(
+        emailVerifications.sendLink(
+          request.email(),
+          servletRequest.getRemoteAddr()
+        )
+      );
   }
 
   /** 메일의 인증 버튼을 누르면 인증을 완료하고 안내 화면을 보여준다. */
@@ -76,6 +81,11 @@ public class MemberController {
     return ResponseEntity.ok()
       .cacheControl(CacheControl.noStore())
       .header("Referrer-Policy", "no-referrer")
+      .header("X-Content-Type-Options", "nosniff")
+      .header(
+        "Content-Security-Policy",
+        "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"
+      )
       .body(
         "<!doctype html><html lang=\"ko\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><title>SportMap 이메일 인증</title><body style=\"font-family:sans-serif;background:#f5f8f3;color:#173e32;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"background:white;padding:40px;border-radius:18px;text-align:center;box-shadow:0 15px 50px #173e3222\"><h1>이메일 인증 완료</h1><p>SportMap 회원가입 화면으로 돌아가 회원가입을 완료해 주세요.</p></main></body></html>"
       );
@@ -166,8 +176,6 @@ public class MemberController {
     @NotBlank @Email @Size(max = 255) String email,
     @NotBlank @Size(max = 100) String emailVerificationToken,
     @NotBlank @Size(max = 15) String phoneNumber,
-    @NotBlank @Size(max = 100) String phoneRequestToken,
-    @NotBlank @Size(max = 100) String phoneVerificationToken,
     @NotNull Member.Gender gender
   ) {}
 

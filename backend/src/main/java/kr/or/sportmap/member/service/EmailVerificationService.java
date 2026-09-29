@@ -6,15 +6,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import kr.or.sportmap.member.domain.EmailVerification;
 import kr.or.sportmap.member.mail.EmailGateway;
 import kr.or.sportmap.member.repository.EmailVerificationRepository;
 import kr.or.sportmap.member.repository.MemberRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,27 +26,29 @@ public class EmailVerificationService {
 
   private static final Duration LINK_LIFETIME = Duration.ofMinutes(10);
   private static final Duration RESEND_INTERVAL = Duration.ofMinutes(1);
+  private static final Duration CLIENT_WINDOW = Duration.ofHours(1);
+  private static final int CLIENT_SEND_LIMIT = 10;
   private final EmailVerificationRepository verifications;
   private final MemberRepository members;
-  private final PasswordEncoder passwords;
   private final EmailGateway gateway;
+  private final ConcurrentHashMap<String, ArrayDeque<Instant>> clientRequests =
+    new ConcurrentHashMap<>();
 
   public EmailVerificationService(
     EmailVerificationRepository verifications,
     MemberRepository members,
-    PasswordEncoder passwords,
     EmailGateway gateway
   ) {
     this.verifications = verifications;
     this.members = members;
-    this.passwords = passwords;
     this.gateway = gateway;
   }
 
   /** 인증 버튼이 포함된 HTML 메일을 발송하고 화면 확인용 요청 키를 반환한다. */
   @Transactional
-  public SendResult sendLink(String address) {
+  public SendResult sendLink(String address, String clientAddress) {
     String email = normalize(address);
+    checkClientLimit(clientAddress);
     if (members.existsByEmail(email)) throw new ResponseStatusException(
       HttpStatus.CONFLICT,
       "이미 가입된 이메일입니다"
@@ -68,7 +71,7 @@ public class EmailVerificationService {
     verification.mockDelivery = gateway.isMock();
     verification.codeHash = null;
     verification.tokenHash = null;
-    verification.requestHash = passwords.encode(requestToken);
+    verification.requestHash = sha256(requestToken);
     verification.confirmationHash = sha256(confirmationToken);
     verification.sentAt = now;
     verification.expiresAt = now.plus(LINK_LIFETIME);
@@ -87,6 +90,12 @@ public class EmailVerificationService {
   /** 메일의 인증 버튼 토큰을 확인해 이메일을 인증 완료 상태로 바꾼다. */
   @Transactional
   public void confirm(String confirmationToken) {
+    if (confirmationToken == null || confirmationToken.isBlank()) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "유효하지 않은 인증 링크입니다"
+      );
+    }
     EmailVerification verification = verifications
       .findByConfirmationHash(sha256(confirmationToken))
       .orElseThrow(() ->
@@ -121,7 +130,7 @@ public class EmailVerificationService {
     if (
       verification.requestHash == null ||
       requestToken == null ||
-      !passwords.matches(requestToken, verification.requestHash)
+      !constantTimeEquals(sha256(requestToken), verification.requestHash)
     ) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
       "인증 요청이 올바르지 않습니다"
@@ -140,8 +149,9 @@ public class EmailVerificationService {
     );
     // Stable across repeated status checks; concurrent polling cannot invalidate a returned proof.
     String signupToken = sha256("email-signup:" + requestToken);
-    if (verification.tokenHash == null) verification.tokenHash =
-      passwords.encode(signupToken);
+    if (verification.tokenHash == null) verification.tokenHash = sha256(
+      signupToken
+    );
     return new VerificationStatus(true, signupToken);
   }
 
@@ -163,7 +173,7 @@ public class EmailVerificationService {
       verification.verifiedAt == null ||
       verification.expiresAt == null ||
       !Instant.now().isBefore(verification.expiresAt) ||
-      !passwords.matches(token, verification.tokenHash)
+      !constantTimeEquals(sha256(token), verification.tokenHash)
     ) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
       "이메일 인증을 다시 진행해 주세요"
@@ -181,6 +191,43 @@ public class EmailVerificationService {
         HttpStatus.BAD_REQUEST,
         "발송 모드가 변경됐습니다. 이메일 인증을 다시 진행해 주세요"
       );
+    }
+  }
+
+  /** 한 클라이언트가 대량의 인증 메일을 발송하지 못하도록 시간당 요청 수를 제한한다. */
+  private void checkClientLimit(String clientAddress) {
+    String key = sha256(
+      clientAddress == null || clientAddress.isBlank()
+        ? "unknown"
+        : clientAddress
+    );
+    Instant now = Instant.now();
+    ArrayDeque<Instant> requests = clientRequests.computeIfAbsent(
+      key,
+      ignored -> new ArrayDeque<>()
+    );
+    synchronized (requests) {
+      Instant cutoff = now.minus(CLIENT_WINDOW);
+      while (!requests.isEmpty() && requests.peekFirst().isBefore(cutoff)) {
+        requests.removeFirst();
+      }
+      if (
+        requests.size() >= CLIENT_SEND_LIMIT
+      ) throw new ResponseStatusException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        "이메일 인증 요청 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요"
+      );
+      requests.addLast(now);
+    }
+    if (clientRequests.size() > 10_000) {
+      clientRequests.entrySet().removeIf(entry -> {
+        synchronized (entry.getValue()) {
+          return (
+            entry.getValue().isEmpty() ||
+            entry.getValue().peekLast().isBefore(now.minus(CLIENT_WINDOW))
+          );
+        }
+      });
     }
   }
 
@@ -207,6 +254,15 @@ public class EmailVerificationService {
     } catch (NoSuchAlgorithmException error) {
       throw new IllegalStateException(error);
     }
+  }
+
+  /** 고정 시간 비교로 인증 토큰 해시의 일치 여부를 확인한다. */
+  private boolean constantTimeEquals(String supplied, String stored) {
+    if (stored == null) return false;
+    return MessageDigest.isEqual(
+      supplied.getBytes(StandardCharsets.US_ASCII),
+      stored.getBytes(StandardCharsets.US_ASCII)
+    );
   }
 
   public record VerificationStatus(

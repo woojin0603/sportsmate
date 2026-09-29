@@ -43,7 +43,6 @@ import {
   X,
 } from "lucide-react";
 import { api, json, query, resetCsrf } from "./api";
-import PhoneVerificationField from "./PhoneVerificationField";
 import EmailVerificationField from "./EmailVerificationField";
 import FitnessPage from "./FitnessPage.jsx";
 import AdminPage from "./AdminPage.jsx";
@@ -112,7 +111,7 @@ const shortDate = (value) =>
       })
     : "—";
 const statusText = {
-  REQUESTED: "신청 기록",
+  REQUESTED: "관심 일정",
   CONFIRMED: "예약 확정",
   CANCELLED: "취소 완료",
 };
@@ -137,17 +136,32 @@ function useRoute() {
 
 // API 요청의 로딩·오류·결과 상태를 관리하고 재조회 함수를 제공한다.
 function useRemote(path, deps = []) {
-  const [state, setState] = useState({ data: null, loading: true, error: "" });
+  const [state, setState] = useState({
+    data: null,
+    loading: true,
+    error: "",
+    updatedAt: null,
+  });
   const load = useCallback(async () => {
     if (!path) {
-      setState({ data: null, loading: false, error: "" });
+      setState({ data: null, loading: false, error: "", updatedAt: null });
       return;
     }
     setState((previous) => ({ ...previous, loading: true, error: "" }));
     try {
-      setState({ data: await api(path), loading: false, error: "" });
+      setState({
+        data: await api(path),
+        loading: false,
+        error: "",
+        updatedAt: new Date(),
+      });
     } catch (error) {
-      setState({ data: null, loading: false, error: error.message });
+      setState({
+        data: null,
+        loading: false,
+        error: error.message,
+        updatedAt: null,
+      });
     }
   }, [path]);
   useEffect(() => {
@@ -311,8 +325,9 @@ function PolicyPage({ kind }) {
             <h2>수집 항목과 목적</h2>
             <p>
               회원가입 시 성명, 아이디, 암호화된 비밀번호, 생년월일, 이메일,
-              전화번호, 성별을 수집해 본인 확인, 연령별 추천, 예약 일정과 고객
-              문의 처리에 사용합니다.
+              전화번호, 성별을 수집합니다. 이메일 소유 확인, 계정 관리, 연령별
+              추천, 예약 연락과 고객 문의 처리에 사용하며 전화번호 인증 문자는
+              발송하지 않습니다.
             </p>
           </div>
           <div className="policy-card">
@@ -386,24 +401,44 @@ function SectionTitle({ eyebrow, title, subtitle, aside }) {
 // 목록의 이전·다음 페이지 이동을 처리한다.
 function Pagination({ page, onPage }) {
   if (!page || page.totalPages <= 1) return null;
+  const current = page.number;
+  const start = Math.max(0, Math.min(current - 2, page.totalPages - 5));
+  const visiblePages = Array.from(
+    { length: Math.min(5, page.totalPages) },
+    (_, index) => start + index,
+  );
   return (
-    <div className="pagination">
+    <nav className="pagination" aria-label="페이지 이동">
       <button
+        type="button"
+        aria-label="이전 페이지"
         disabled={page.number === 0}
         onClick={() => onPage(page.number - 1)}
       >
         <ChevronLeft size={17} />
       </button>
-      <span>
-        {page.number + 1} / {page.totalPages}
-      </span>
+      {visiblePages.map((pageNumber) => (
+        <button
+          type="button"
+          key={pageNumber}
+          className={pageNumber === current ? "active" : ""}
+          aria-current={pageNumber === current ? "page" : undefined}
+          aria-label={`${pageNumber + 1}페이지`}
+          onClick={() => onPage(pageNumber)}
+        >
+          {pageNumber + 1}
+        </button>
+      ))}
       <button
+        type="button"
+        aria-label="다음 페이지"
         disabled={page.number + 1 >= page.totalPages}
         onClick={() => onPage(page.number + 1)}
       >
         <ChevronRight size={17} />
       </button>
-    </div>
+      <span className="pagination-total">총 {page.totalPages}페이지</span>
+    </nav>
   );
 }
 
@@ -1161,6 +1196,11 @@ function HomeReservationCalendar({ user, navigate, openAuth }) {
   );
 }
 
+// Android 앱에서는 긴 시설 목록을 한 화면에 쌓지 않도록 페이지 크기를 줄인다.
+function facilityPageSize(webSize) {
+  if (typeof navigator === "undefined") return webSize;
+  return navigator.userAgent.includes("SportMapAndroid") ? 5 : webSize;
+}
 // 메인 화면에서도 공공데이터포털의 최신 시설을 지역별로 탐색한다.
 function FacilitiesPage({ navigate, user, openAuth }) {
   const [keyword, setKeyword] = useState("");
@@ -1171,6 +1211,7 @@ function FacilitiesPage({ navigate, user, openAuth }) {
   const [locality, setLocality] = useState("");
   const [selectedExternal, setSelectedExternal] = useState(null);
   const [page, setPage] = useState(0);
+  const pageSize = facilityPageSize(9);
   const livePath = locality
     ? query("/api/facilities/external/by-locality", {
         cp_nm: province,
@@ -1178,11 +1219,11 @@ function FacilitiesPage({ navigate, user, openAuth }) {
         addr_emd_nm: locality,
         faci_nm: submitted,
         page,
-        size: 9,
+        size: pageSize,
       })
     : query("/api/facilities/external", {
         pageNo: page + 1,
-        numOfRows: 9,
+        numOfRows: pageSize,
         faci_nm: submitted,
         cp_nm: province,
         cpb_nm: submittedCity,
@@ -1238,7 +1279,7 @@ function FacilitiesPage({ navigate, user, openAuth }) {
     number: page,
     totalPages: locality
       ? facilities.data?.page?.totalPages || 0
-      : Math.ceil(total / 9),
+      : Math.ceil(total / pageSize),
   };
   const openFacility = (id) => {
     setSelectedExternal(
@@ -1522,6 +1563,7 @@ function LiveFacilitiesPage({ navigate }) {
   const [locality, setLocality] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState(null);
+  const pageSize = facilityPageSize(12);
   const path = locality
     ? query("/api/facilities/external/by-locality", {
         cp_nm: province,
@@ -1529,11 +1571,11 @@ function LiveFacilitiesPage({ navigate }) {
         addr_emd_nm: locality,
         faci_nm: submitted,
         page,
-        size: 12,
+        size: pageSize,
       })
     : query("/api/facilities/external", {
         pageNo: page + 1,
-        numOfRows: 12,
+        numOfRows: pageSize,
         faci_nm: submitted,
         cp_nm: province,
         cpb_nm: submittedCity,
@@ -1555,7 +1597,7 @@ function LiveFacilitiesPage({ navigate }) {
   );
   const pages = locality
     ? result.data?.page?.totalPages || 0
-    : Math.ceil(total / 12);
+    : Math.ceil(total / pageSize);
   const open = (id) =>
     setSelected(items.find((item) => item.id === id) || null);
 
@@ -1683,7 +1725,14 @@ function LiveFacilitiesPage({ navigate }) {
               <strong>
                 검색 결과 <em>{total.toLocaleString("ko-KR")}</em>
               </strong>
-              <span>공공데이터포털 제공 자료</span>
+              <span>
+                공공데이터포털 제공 자료
+                {result.updatedAt &&
+                  ` · ${result.updatedAt.toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })} 조회`}
+              </span>
             </div>
             {result.loading ? (
               <LoadingCards />
@@ -2018,7 +2067,7 @@ function ProgramCard({ item, navigate, onApply }) {
             <ArrowUpRight size={18} />
           </button>
           <button className="button button-dark" onClick={() => onApply(item)}>
-            {item.bookingSupported ? "예약하기" : "신청 기록"}{" "}
+            {item.bookingSupported ? "예약하기" : "관심 일정에 담기"}{" "}
             <ArrowRight size={16} />
           </button>
         </div>
@@ -2332,7 +2381,7 @@ function ProgramDetailPage({ id, navigate, onApply }) {
               className="button button-lime wide"
               onClick={() => onApply(item)}
             >
-              {item.bookingSupported ? "예약하기" : "신청 기록하기"}{" "}
+              {item.bookingSupported ? "예약하기" : "관심 일정에 담기"}{" "}
               <ArrowRight size={17} />
             </button>
             {item.registrationUrl && (
@@ -3657,7 +3706,6 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
-  const [phoneVerification, setPhoneVerification] = useState(null);
   const [policyKind, setPolicyKind] = useState(null);
   const update = (event) => {
     setForm((previous) => ({
@@ -3672,10 +3720,6 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
       setError("이메일 인증을 완료해 주세요.");
       return;
     }
-    if (mode === "signup" && !phoneVerification) {
-      setError("휴대폰 인증을 완료해 주세요.");
-      return;
-    }
     setBusy(true);
     setError("");
     try {
@@ -3685,13 +3729,10 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           body: json({
             ...form,
             emailVerificationToken,
-            phoneRequestToken: phoneVerification.requestToken,
-            phoneVerificationToken: phoneVerification.verificationToken,
           }),
         });
         notify("회원가입이 완료됐습니다. 로그인해 주세요.");
         setEmailVerificationToken("");
-        setPhoneVerification(null);
         setMode("login");
       } else {
         const user = await api("/api/users/login", {
@@ -3819,13 +3860,26 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
                   }
                   onVerified={setEmailVerificationToken}
                 />
-                <PhoneVerificationField
-                  value={form.phoneNumber}
-                  onChange={(phoneNumber) =>
-                    setForm((previous) => ({ ...previous, phoneNumber }))
-                  }
-                  onVerified={setPhoneVerification}
-                />
+                <label>
+                  전화번호
+                  <input
+                    name="phoneNumber"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    value={form.phoneNumber}
+                    onChange={update}
+                    required
+                    maxLength={13}
+                    pattern="010[- ]?[0-9]{4}[- ]?[0-9]{4}"
+                    placeholder="010-1234-5678"
+                    title="010으로 시작하는 휴대폰 번호를 입력해 주세요"
+                  />
+                  <small className="input-hint">
+                    예약 연락을 위해 형식만 확인하며 인증 문자는 발송하지
+                    않습니다.
+                  </small>
+                </label>
                 <label className="consent-check">
                   <input type="checkbox" required />{" "}
                   <span>
@@ -3858,7 +3912,6 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
             <button
               onClick={() => {
                 setEmailVerificationToken("");
-                setPhoneVerification(null);
                 setMode(mode === "login" ? "signup" : "login");
                 setError("");
               }}

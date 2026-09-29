@@ -44,7 +44,7 @@
 }
 ```
 
-회원가입 전에 이메일 발송 → 메일의 인증 버튼 클릭 → `requestToken`으로 상태 확인 → 응답의 `verificationToken`을 회원가입 본문에 넣는 순서로 요청합니다. 인증 링크는 10분 유효하고 재발송 간격은 1분입니다. 메일 전송에는 서버의 `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` 설정이 필요합니다. 설정이 없거나 발송이 실패하면 503입니다. `fullName` 필수·최대 50자, `username` 영문자로 시작하는 영문·숫자·밑줄 4~30자, `password` 8~72자, `birthDate` 과거 날짜, `email` 이메일 형식·최대 255자, `phoneNumber` 숫자·하이픈 10~15자, `gender`는 `MALE`·`FEMALE`·`OTHER` 중 하나입니다. 로그인 본문 예시는 `{"username":"hong1234","password":"ExamplePassword123!"}`입니다. 회원 정보 응답에는 `id`, `fullName`, `username`, `birthDate`, `email`, `phoneNumber`, `gender`가 있으며 비밀번호는 없습니다. 토큰 만료 시간은 15분입니다.
+회원가입 전에 이메일 발송 → 메일의 인증 버튼 클릭 → `requestToken`으로 상태 확인 → 응답의 `verificationToken`을 회원가입 본문에 넣는 순서로 요청합니다. 인증 링크는 10분 유효하고 재발송 간격은 1분이며, 클라이언트별 시간당 발송 횟수도 제한됩니다. 메일 전송에는 서버의 `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_PUBLIC_BASE_URL` 설정이 필요합니다. 설정이 없거나 발송이 실패하면 503입니다. 전화번호 인증 토큰은 받지 않으며 `010`으로 시작하는 국내 휴대전화 11자리 형식만 서버에서 검증합니다. `fullName` 필수·최대 50자, `username` 영문자로 시작하는 영문·숫자·밑줄 4~30자, `password` 8~72자, `birthDate` 과거 날짜, `email` 이메일 형식·최대 255자, `gender`는 `MALE`·`FEMALE`·`OTHER` 중 하나입니다. 로그인 본문 예시는 `{"username":"hong1234","password":"ExamplePassword123!"}`입니다. 회원 정보 응답에는 `id`, `fullName`, `username`, `birthDate`, `email`, `phoneNumber`, `gender`가 있으며 비밀번호는 없습니다. JWT 만료 시간은 15분입니다.
 
 ## 시설·지역·외부 공공데이터
 

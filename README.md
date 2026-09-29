@@ -18,7 +18,7 @@ IntelliJ에서는 `backend/build.gradle`, Android Studio에서는 `android` 폴�
 
 Android 테스트 앱은 `android`에 있습니다. 서버 연결, APK 빌드와 기기 설치 방법은 [Android 테스트 앱 안내](android/README.md)를 참고하세요.
 
-회원가입에 휴대폰 인증을 추가했습니다. 로컬에서는 실제 SMS 대신 화면의 테스트용 인증번호로 진행합니다. 시연 방법, 보안 제한, 실제 문자 서비스 교체 방법은 [SMS 인증 안내](docs/SMS_VERIFICATION.md)를 참고하세요. 이메일도 로컬에서는 실제 발송 없이 테스트 링크로 인증합니다. 메일 계정 없이 가입 전체를 시연할 수 있으며 [이메일 인증 안내](docs/EMAIL_VERIFICATION.md)에 실제 SMTP 전환 방법을 정리했습니다.
+회원가입은 이메일 인증 링크를 필수로 사용합니다. 전화번호는 예약 연락을 위해 `010` 형식만 검증해 저장하며 인증 문자는 발송하지 않습니다. 로컬에서는 이메일 흐름 확인을 위한 테스트 링크를 사용할 수 있고, 제출 환경에서는 실제 SMTP와 공개 HTTPS 주소를 설정해야 합니다. 자세한 내용은 [이메일 인증 안내](docs/EMAIL_VERIFICATION.md)를 참고하세요.
 
 React + Vite 화면은 [web/README.md](web/README.md)에 실행법과 화면별 API 연결을 정리했습니다. 개발 중에는 Spring Boot 실행 후 `web`에서 `npm run dev`를 실행할 수 있습니다. Spring Boot 하나로 화면까지 제공하려면 `web`에서 `npm run build:spring`을 실행하고 Spring Boot를 재시작하세요. Vite 산출물 폴더는 `build`가 아니라 `dist`입니다. `http://127.0.0.1:8080/`에서 화면을 확인하고, 직접 입력한 `/programs` 같은 주소도 새로고침되는지 확인할 수 있습니다.
 
@@ -48,7 +48,7 @@ $env:MAIL_PASSWORD='SMTP 비밀번호 또는 앱 비밀번호'
 $env:MAIL_FROM='noreply@example.com'
 ```
 
-가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 로컬 모드에서는 테스트 링크가 표시되고 실제 모드에서는 메일이 발송됩니다. 메일의 인증 버튼을 발송 후 10분 안에 누르고 휴대폰 인증까지 완료한 뒤 회원가입할 수 있습니다. 이메일 재발송은 1분 뒤 가능합니다. 기존 데모 계정의 로그인에는 영향을 주지 않습니다.
+가입 화면에서 이메일을 입력하고 **이메일 인증하기**를 누르면 로컬 모드에서는 테스트 링크가 표시되고 실제 모드에서는 메일이 발송됩니다. 메일의 인증 버튼을 발송 후 10분 안에 누르면 회원가입할 수 있습니다. 이메일 재발송은 1분 뒤 가능하며 전화번호는 인증 토큰 없이 국내 휴대전화 형식만 검증합니다.
 
 로컬 H2로 실행하면 제공받은 2026년 7월 공공 프로그램 미리보기와 해당 시설을 적재할 수 있습니다. 테스트 회원·게시글 자동 생성은 비활성화했습니다. 로컬 H2는 `backend/sportmap-local.mv.db` 파일에 저장되어 서버를 재시작해도 회원·예약 정보가 남습니다.
 
@@ -129,8 +129,6 @@ cd backend
   "email": "hong@example.com",
   "phoneNumber": "010-1234-5678",
   "emailVerificationToken": "이메일 인증 후 받은 가입 토큰",
-  "phoneRequestToken": "휴대폰 인증번호 요청 토큰",
-  "phoneVerificationToken": "휴대폰 인증 후 받은 가입 토큰",
   "gender": "MALE"
 }
 ```

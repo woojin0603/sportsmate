@@ -95,8 +95,6 @@ public class SecurityConfig {
         path.equals("/api/site-settings") ||
         path.equals("/api/users/login") ||
         path.equals("/api/users/signup") ||
-        path.equals("/api/users/phone/send") ||
-        path.equals("/api/users/phone/verify") ||
         path.equals("/api/users/email/send") ||
         path.equals("/api/users/email/status") ||
         path.equals("/api/users/email/confirm") ||
@@ -186,8 +184,6 @@ public class SecurityConfig {
         .requestMatchers(
           HttpMethod.POST,
           "/api/users/signup",
-          "/api/users/phone/send",
-          "/api/users/phone/verify",
           "/api/users/email/send",
           "/api/users/email/status",
           "/api/users/login",

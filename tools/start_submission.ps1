@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $backendRoot = Join-Path $projectRoot "backend"
 $secretPath = Join-Path $backendRoot "config\submission-secrets.properties"
@@ -8,6 +8,7 @@ if (-not (Test-Path -LiteralPath $secretPath)) {
 
 Set-Location -LiteralPath $backendRoot
 $env:SPRING_PROFILES_ACTIVE = "submission"
+$env:GRADLE_USER_HOME = Join-Path $projectRoot ".gradle-local"
 Write-Host "SportMap을 제출용 MySQL 프로필로 시작합니다." -ForegroundColor Cyan
 Write-Host "종료하려면 Ctrl+C를 누르세요."
 & ".\gradlew.bat" bootRun

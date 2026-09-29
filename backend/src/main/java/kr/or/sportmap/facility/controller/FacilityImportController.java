@@ -3,6 +3,8 @@ package kr.or.sportmap.facility.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import kr.or.sportmap.facility.domain.*;
 import kr.or.sportmap.facility.repository.*;
 import kr.or.sportmap.region.domain.Region;
@@ -41,9 +43,9 @@ public class FacilityImportController {
     @RequestHeader(value = "X-Import-Key", required = false) String key,
     @Valid @RequestBody ImportFacility body
   ) {
-    if (
-      importKey.isBlank() || !importKey.equals(key)
-    ) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    if (!authorized(key)) throw new ResponseStatusException(
+      HttpStatus.FORBIDDEN
+    );
     FacilitySource source = sources
       .findByDatasetCodeAndSourceKey(body.datasetCode(), body.sourceKey())
       .orElse(null);
@@ -88,6 +90,18 @@ public class FacilityImportController {
       source.fetchedAt = java.time.Instant.now();
     }
     return f.id;
+  }
+
+  /** 수집 키는 고정 시간 비교로 확인해 비교 시간에서 값을 추측하기 어렵게 한다. */
+  private boolean authorized(String supplied) {
+    return (
+      !importKey.isBlank() &&
+      supplied != null &&
+      MessageDigest.isEqual(
+        importKey.getBytes(StandardCharsets.UTF_8),
+        supplied.getBytes(StandardCharsets.UTF_8)
+      )
+    );
   }
 
   public record ImportFacility(

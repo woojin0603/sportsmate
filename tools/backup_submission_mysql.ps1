@@ -1,4 +1,4 @@
-param([string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin")
+﻿param([string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin")
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -16,14 +16,16 @@ $backupDir = Join-Path $projectRoot "backups"
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 $backupPath = Join-Path $backupDir "sportmap_submission_$(Get-Date -Format 'yyyyMMdd_HHmmss').sql"
 try {
-  @"
+  $clientConfig = @"
 [client]
 host=127.0.0.1
 port=3306
 user=$($properties['spring.datasource.username'])
 password="$($properties['spring.datasource.password'])"
 default-character-set=utf8mb4
-"@ | Set-Content -LiteralPath $tempClient -Encoding utf8
+"@
+  $encoding = New-Object System.Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($tempClient, $clientConfig, $encoding)
   & $dump "--defaults-extra-file=$tempClient" --single-transaction --routines --triggers "--result-file=$backupPath" sportmap_submission
   if ($LASTEXITCODE -ne 0) { throw "백업 생성에 실패했습니다." }
   Write-Host "백업 완료: $backupPath" -ForegroundColor Green

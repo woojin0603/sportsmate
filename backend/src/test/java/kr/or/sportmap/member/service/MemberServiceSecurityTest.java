@@ -48,7 +48,6 @@ class MemberServiceSecurityTest {
       encoder,
       mock(JwtEncoder.class),
       mock(EmailVerificationService.class),
-      mock(PhoneVerificationService.class),
       jdbc
     );
   }

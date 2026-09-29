@@ -56,7 +56,7 @@ class EmailVerificationControllerTest {
       .readTree(csrf.getContentAsString())
       .path("token")
       .asText();
-    when(service.sendLink(anyString())).thenReturn(
+    when(service.sendLink(anyString(), anyString())).thenReturn(
       new EmailVerificationService.SendResult(
         "request",
         Instant.now().plusSeconds(600),

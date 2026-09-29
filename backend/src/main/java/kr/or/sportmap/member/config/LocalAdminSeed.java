@@ -23,21 +23,31 @@ public class LocalAdminSeed implements ApplicationRunner {
   private final MemberRepository members;
   private final PasswordEncoder passwords;
   private final String adminPassword;
+  private final boolean requireStrongPassword;
 
   public LocalAdminSeed(
     MemberRepository members,
     PasswordEncoder passwords,
-    @Value("${app.admin.initial-password}") String adminPassword
+    @Value("${app.admin.initial-password}") String adminPassword,
+    @Value(
+      "${app.admin.require-strong-password:false}"
+    ) boolean requireStrongPassword
   ) {
     this.members = members;
     this.passwords = passwords;
     this.adminPassword = adminPassword;
+    this.requireStrongPassword = requireStrongPassword;
   }
 
   /** 계정이 없으면 생성하고, 기존 로컬 admin 계정의 역할과 비밀번호를 맞춘다. */
   @Override
   @Transactional
   public void run(ApplicationArguments args) {
+    if (requireStrongPassword && !isStrong(adminPassword)) {
+      throw new IllegalStateException(
+        "Submission admin password must be at least 12 characters and include upper/lowercase letters, a number, and a special character"
+      );
+    }
     Member admin = members
       .findByUsername("admin")
       .orElseGet(() ->
@@ -56,5 +66,18 @@ public class LocalAdminSeed implements ApplicationRunner {
       admin.passwordHash = passwords.encode(adminPassword);
     }
     members.save(admin);
+  }
+
+  /** 제출 환경에서 공개되거나 단순한 관리자 비밀번호 사용을 차단한다. */
+  private boolean isStrong(String value) {
+    return (
+      value != null &&
+      value.length() >= 12 &&
+      value.matches(".*[A-Z].*") &&
+      value.matches(".*[a-z].*") &&
+      value.matches(".*[0-9].*") &&
+      value.matches(".*[^A-Za-z0-9].*") &&
+      !"admin1234!".equals(value)
+    );
   }
 }

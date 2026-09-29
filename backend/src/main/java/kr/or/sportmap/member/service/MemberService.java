@@ -28,7 +28,6 @@ public class MemberService {
   private final PasswordEncoder passwords;
   private final JwtEncoder jwtEncoder;
   private final EmailVerificationService emailVerifications;
-  private final PhoneVerificationService phoneVerifications;
   private final JdbcTemplate jdbc;
   private final ConcurrentHashMap<String, LoginAttempt> loginAttempts =
     new ConcurrentHashMap<>();
@@ -38,14 +37,12 @@ public class MemberService {
     PasswordEncoder passwords,
     JwtEncoder jwtEncoder,
     EmailVerificationService emailVerifications,
-    PhoneVerificationService phoneVerifications,
     JdbcTemplate jdbc
   ) {
     this.repository = repository;
     this.passwords = passwords;
     this.jwtEncoder = jwtEncoder;
     this.emailVerifications = emailVerifications;
-    this.phoneVerifications = phoneVerifications;
     this.jdbc = jdbc;
   }
 
@@ -58,8 +55,6 @@ public class MemberService {
     String email,
     String emailVerificationToken,
     String phoneNumber,
-    String phoneRequestToken,
-    String phoneVerificationToken,
     Member.Gender gender
   ) {
     String normalizedUsername = username.trim();
@@ -70,13 +65,7 @@ public class MemberService {
       "예약된 아이디입니다"
     );
     String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-    String normalizedPhone = PhoneVerificationService.normalize(phoneNumber);
-    if (
-      normalizedPhone.length() < 10 || normalizedPhone.length() > 11
-    ) throw new ResponseStatusException(
-      HttpStatus.BAD_REQUEST,
-      "전화번호는 숫자 10~11자리여야 합니다"
-    );
+    String normalizedPhone = normalizePhone(phoneNumber);
     if (
       password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72
     ) throw new ResponseStatusException(
@@ -94,11 +83,6 @@ public class MemberService {
     ) throw new ResponseStatusException(
       HttpStatus.CONFLICT,
       "이미 사용 중인 이메일입니다"
-    );
-    phoneVerifications.consume(
-      normalizedPhone,
-      phoneRequestToken,
-      phoneVerificationToken
     );
     emailVerifications.consume(normalizedEmail, emailVerificationToken);
     try {
@@ -244,6 +228,20 @@ public class MemberService {
         )
       )
       .getTokenValue();
+  }
+
+  /** 전화번호는 발송 인증 없이 국내 휴대전화 형식만 검증해 저장한다. */
+  private String normalizePhone(String rawPhone) {
+    if (rawPhone == null) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "010으로 시작하는 휴대폰 번호를 입력해 주세요"
+    );
+    String phone = rawPhone.replaceAll("[ -]", "");
+    if (!phone.matches("010[0-9]{8}")) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "010으로 시작하는 휴대폰 번호 11자리를 입력해 주세요"
+    );
+    return phone;
   }
 
   private record LoginAttempt(int failures, Instant blockedUntil) {}

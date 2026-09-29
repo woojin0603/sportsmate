@@ -8,7 +8,7 @@ Windows의 `MySQL80` 서비스가 실행 중인 상태에서 프로젝트 루트
 powershell -ExecutionPolicy Bypass -File .\tools\initialize_submission_mysql.ps1
 ```
 
-스크립트가 묻는 값은 MySQL 설치 때 정한 `root` 비밀번호입니다. SportMap 관리자 계정은 기존 요구사항에 맞춰 `admin` / `admin1234!`로 초기화됩니다.
+스크립트는 MySQL 설치 때 정한 `root` 비밀번호와 제출용 초기 관리자 비밀번호를 묻습니다. 관리자 비밀번호는 12자 이상이며 영문 대문자·소문자·숫자·특수문자를 모두 포함해야 합니다. 공개된 기본 비밀번호 `admin1234!`는 제출 환경에서 거부됩니다.
 
 입력값은 화면에 표시되지 않습니다. 스크립트는 `sportmap_submission` 데이터베이스, 이 데이터베이스만 사용할 수 있는 `sportmap_app` 계정, 무작위 비밀키, Git에서 제외되는 비밀 설정 파일을 만듭니다. 기존 로컬 설정의 공공 체육시설 API 키도 복사합니다.
 

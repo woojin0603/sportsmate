@@ -1,4 +1,4 @@
-param([string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin")
+﻿param([string]$MySqlBin = "C:\Program Files\MySQL\MySQL Server 8.0\bin")
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -12,7 +12,7 @@ Get-Content -LiteralPath $secretPath | ForEach-Object {
 }
 $tempClient = Join-Path $env:TEMP "sportmap-check-$([guid]::NewGuid()).cnf"
 try {
-  @"
+  $clientConfig = @"
 [client]
 host=127.0.0.1
 port=3306
@@ -20,7 +20,9 @@ user=$($properties['spring.datasource.username'])
 password="$($properties['spring.datasource.password'])"
 database=sportmap_submission
 default-character-set=utf8mb4
-"@ | Set-Content -LiteralPath $tempClient -Encoding utf8
+"@
+  $encoding = New-Object System.Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($tempClient, $clientConfig, $encoding)
   & $mysql "--defaults-extra-file=$tempClient" --execute="SELECT DATABASE() AS db, CURRENT_USER() AS account, VERSION() AS version; SHOW TABLES;"
   if ($LASTEXITCODE -ne 0) { throw "제출용 MySQL 연결 확인에 실패했습니다." }
 }

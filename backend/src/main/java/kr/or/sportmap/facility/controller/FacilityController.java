@@ -69,7 +69,9 @@ public class FacilityController {
         String[] address = facility.roadAddress.trim().split("\\s+");
         if (address.length >= 2 && address[0].matches(".*[시도]")) {
           List<String> parts = new ArrayList<>();
-          for (String part : address) {
+          parts.add(address[0]);
+          for (int index = 1; index < address.length; index++) {
+            String part = address[index];
             if (!part.matches(".*(시|군|구|읍|면|동|동[0-9]+가)")) break;
             parts.add(part);
           }

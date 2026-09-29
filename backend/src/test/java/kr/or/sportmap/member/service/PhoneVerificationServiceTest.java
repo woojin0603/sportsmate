@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
-import kr.or.sportmap.member.domain.Member;
 import kr.or.sportmap.member.domain.PhoneVerification;
 import kr.or.sportmap.member.repository.*;
 import kr.or.sportmap.member.sms.*;
@@ -17,14 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +40,6 @@ import org.springframework.web.server.ResponseStatusException;
   PhoneVerificationService.class,
   SmsGateway.class,
   SmsDeliveryConfiguration.class,
-  MemberService.class,
   PhoneVerificationServiceTest.Passwords.class,
 })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -67,18 +62,6 @@ class PhoneVerificationServiceTest {
 
   @Autowired
   SmsBudgetRepository budgets;
-
-  @Autowired
-  MemberService members;
-
-  @Autowired
-  MemberRepository memberRepository;
-
-  @MockBean
-  EmailVerificationService emails;
-
-  @MockBean
-  JwtEncoder jwtEncoder;
 
   @org.springframework.boot.test.mock.mockito.SpyBean
   SmsGateway gateway;
@@ -326,65 +309,6 @@ class PhoneVerificationServiceTest {
         proof.verificationToken()
       )
     );
-  }
-
-  @Test
-  void signupRequiresPhoneProofAndRollsBackConsumptionOnEmailFailure() {
-    String username = "phone_test_user";
-    var sent = send();
-    var proof = service.verify(
-      "01012345678",
-      sent.requestToken(),
-      sent.developmentCode()
-    );
-    rejected(() ->
-      members.signup(
-        "테스트",
-        username,
-        "Example123!",
-        LocalDate.of(2000, 1, 1),
-        "phone-test@example.com",
-        "email-proof",
-        "01012345678",
-        null,
-        null,
-        Member.Gender.OTHER
-      )
-    );
-    assertFalse(memberRepository.existsByUsername(username));
-    doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST))
-      .when(emails)
-      .consume(anyString(), anyString());
-    rejected(() ->
-      members.signup(
-        "테스트",
-        username,
-        "Example123!",
-        LocalDate.of(2000, 1, 1),
-        "phone-test@example.com",
-        "email-proof",
-        "01012345678",
-        sent.requestToken(),
-        proof.verificationToken(),
-        Member.Gender.OTHER
-      )
-    );
-    assertFalse(row().consumed);
-    doNothing().when(emails).consume(anyString(), anyString());
-    var member = members.signup(
-      "테스트",
-      username,
-      "Example123!",
-      LocalDate.of(2000, 1, 1),
-      "phone-test@example.com",
-      "email-proof",
-      "01012345678",
-      sent.requestToken(),
-      proof.verificationToken(),
-      Member.Gender.OTHER
-    );
-    assertTrue(row().consumed);
-    memberRepository.deleteById(member.id);
   }
 
   @Test

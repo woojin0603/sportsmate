@@ -3,6 +3,8 @@ package kr.or.sportmap.program.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import kr.or.sportmap.facility.domain.Facility;
 import kr.or.sportmap.facility.domain.FacilitySource;
@@ -51,9 +53,9 @@ public class ProgramImportController {
     @RequestHeader(value = "X-Import-Key", required = false) String key,
     @Valid @RequestBody ImportProgram body
   ) {
-    if (
-      importKey.isBlank() || !importKey.equals(key)
-    ) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    if (!authorized(key)) throw new ResponseStatusException(
+      HttpStatus.FORBIDDEN
+    );
     if (
       body.endsOn().isBefore(body.beginsOn())
     ) throw new ResponseStatusException(
@@ -115,6 +117,18 @@ public class ProgramImportController {
     // 모집정원은 실시간 잔여석이 아니므로 자체 예약을 확정하지 않는다.
     program.bookingSupported = false;
     return programs.save(program).id;
+  }
+
+  /** 수집 키는 고정 시간 비교로 확인해 비교 시간에서 값을 추측하기 어렵게 한다. */
+  private boolean authorized(String supplied) {
+    return (
+      !importKey.isBlank() &&
+      supplied != null &&
+      MessageDigest.isEqual(
+        importKey.getBytes(StandardCharsets.UTF_8),
+        supplied.getBytes(StandardCharsets.UTF_8)
+      )
+    );
   }
 
   public record ImportProgram(

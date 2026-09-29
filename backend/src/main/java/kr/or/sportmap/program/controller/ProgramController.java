@@ -90,7 +90,7 @@ public class ProgramController {
       return new ProgramResponse(
         p.id,
         p.facility == null ? null : p.facility.getId(),
-        p.facility == null ? null : p.facility.name,
+        p.facility == null ? null : cleanOrganization(p.facility.name),
         p.facility == null
           ? null
           : FacilityController.FacilityResponse.displayRegion(p.facility),
@@ -105,6 +105,15 @@ public class ProgramController {
         p.endsOn,
         p.registrationUrl
       );
+    }
+
+    /** 같은 분류 문구가 연속으로 적재된 운영기관명을 한 번만 표시한다. */
+    private static String cleanOrganization(String value) {
+      if (value == null) return null;
+      return value
+        .replaceAll("(\\([^)]*\\))(?:\\s*\\1)+", "$1")
+        .replaceAll("\\s{2,}", " ")
+        .trim();
     }
   }
 

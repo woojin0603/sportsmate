@@ -897,6 +897,7 @@ textarea:focus-visible {
   color: #fff;
   font-size: 15px;
   font-weight: 800;
+  min-height: 42px;
   padding: 9px 17px;
 }
 .filter-divider {
@@ -1219,8 +1220,8 @@ textarea:focus-visible {
   color: #304a39;
 }
 .calendar-month-nav button {
-  width: 29px;
-  height: 29px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border: 1px solid #e4ebe2;
@@ -1243,7 +1244,7 @@ textarea:focus-visible {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 31px;
+  min-height: 34px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1504,21 +1505,35 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
+  gap: 7px;
   padding: 22px 0;
   color: #7e8d81;
   font-size: 15px;
   font-weight: 800;
 }
 .pagination button {
-  width: 29px;
-  height: 29px;
+  min-width: 40px;
+  height: 40px;
   border: 1px solid #e4eae2;
   background: #fff;
   border-radius: 8px;
   display: grid;
   place-items: center;
   color: #4c6d54;
+}
+.pagination button.active {
+  border-color: #1d4636;
+  background: #1d4636;
+  color: #fff;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.pagination-total {
+  margin-left: 5px;
+  color: #6f8073;
+  font-size: 14px;
 }
 .bottom-banner {
   background: #e9f2d9;
@@ -3439,21 +3454,51 @@ textarea:focus-visible {
     right: 1%;
     width: 40%;
   }
+  .hero-content {
+    max-width: 45%;
+  }
   .hero-home-calendar {
     left: auto;
-    right: calc(3% + 316px);
+    right: 24px;
     width: 300px;
     transform: translateY(-50%);
   }
+  .hero:has(.hero-schedule-detail) {
+    min-height: 650px;
+    align-items: flex-start;
+  }
+  .hero:has(.hero-schedule-detail) .hero-content {
+    max-width: 100%;
+  }
+  .hero:has(.hero-schedule-detail) .hero-home-calendar {
+    top: auto;
+    bottom: 34px;
+    left: 45px;
+    right: auto;
+    width: calc(50% - 57px);
+    transform: none;
+  }
   .hero-schedule-detail {
-    right: 3%;
-    width: 300px;
+    top: auto;
+    right: 45px;
+    bottom: 34px;
+    width: calc(50% - 57px);
+    transform: none;
   }
   .hero-orbit.orbit-three {
     left: -10%;
   }
   .program-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1180px) {
+  .program-filter .program-region-fields {
+    flex-basis: 100%;
+  }
+  .program-filter > .search-field {
+    flex-basis: 100%;
+    min-height: 44px;
   }
 }
 @media (max-width: 1080px) {
