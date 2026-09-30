@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   MapContainer,
   Marker,
@@ -44,9 +52,10 @@ import {
 } from "lucide-react";
 import { api, json, query, resetCsrf } from "./api";
 import EmailVerificationField from "./EmailVerificationField";
-import FitnessPage from "./FitnessPage.jsx";
-import AdminPage from "./AdminPage.jsx";
 import { formatPhone } from "./phone";
+
+const FitnessPage = lazy(() => import("./FitnessPage.jsx"));
+const AdminPage = lazy(() => import("./AdminPage.jsx"));
 
 const navItems = [
   { label: "시설 찾기", path: "/", icon: MapPin },
@@ -341,8 +350,9 @@ function PolicyPage({ kind }) {
           <div className="policy-card">
             <h2>보유와 삭제</h2>
             <p>
-              회원정보와 활동정보는 탈퇴 시 함께 삭제합니다. 법령상 별도 보관
-              의무가 생기는 경우 해당 기간과 근거를 별도로 고지합니다.
+              탈퇴 요청 후 7일 동안 복구를 위해 회원정보와 활동정보를 보관하며,
+              유예기간이 끝나면 함께 영구 삭제합니다. 법령상 별도 보관 의무가
+              생기는 경우 해당 기간과 근거를 별도로 고지합니다.
             </p>
           </div>
           <div className="policy-card">
@@ -3405,7 +3415,7 @@ function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
     event.preventDefault();
     if (
       !window.confirm(
-        "계정과 예약·게시글·체력 기록을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+        "탈퇴를 요청할까요? 7일 안에는 로그인 화면에서 계정을 복구할 수 있습니다.",
       )
     )
       return;
@@ -3415,7 +3425,7 @@ function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
         method: "DELETE",
         body: json({ password: withdrawPassword }),
       });
-      notify("회원 탈퇴가 완료됐습니다.");
+      notify("탈퇴가 요청됐습니다. 7일 안에는 계정을 복구할 수 있습니다.");
       await onLogout(true);
     } catch (error) {
       notify(error.message, "error");
@@ -3560,7 +3570,7 @@ function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
             </form>
             <form onSubmit={withdraw} className="withdraw-form">
               <h3>회원 탈퇴</h3>
-              <p>계정, 예약, 질문, 리뷰와 체력 분석 기록이 삭제됩니다.</p>
+              <p>7일의 유예기간 후 계정과 활동 기록이 영구 삭제됩니다.</p>
               <input
                 type="password"
                 required
@@ -3569,7 +3579,7 @@ function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
                 onChange={(e) => setWithdrawPassword(e.target.value)}
               />
               <button className="button danger-button" disabled={busy}>
-                계정과 개인정보 삭제
+                회원 탈퇴 요청
               </button>
             </form>
           </div>
@@ -3691,6 +3701,81 @@ function BirthDateSelect({ value, onChange }) {
   );
 }
 
+// 휴대전화 번호를 010, 가운데 4자리, 마지막 4자리로 나눠 입력받는다.
+function PhoneNumberFields({ value, onChange }) {
+  const lastPartRef = useRef(null);
+  const digits = String(value || "").replace(/\D/g, "");
+  const middle = digits.startsWith("010") ? digits.slice(3, 7) : "";
+  const last = digits.startsWith("010") ? digits.slice(7, 11) : "";
+
+  function changePart(part, next) {
+    const cleaned = next.replace(/\D/g, "").slice(0, 4);
+    onChange(
+      `010${part === "middle" ? cleaned : middle}${
+        part === "last" ? cleaned : last
+      }`,
+    );
+    if (part === "middle" && cleaned.length === 4) {
+      lastPartRef.current?.focus();
+    }
+  }
+
+  function pastePhone(event) {
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "");
+    if (/^010[0-9]{8}$/.test(pasted)) {
+      event.preventDefault();
+      onChange(pasted);
+      lastPartRef.current?.focus();
+    }
+  }
+
+  return (
+    <fieldset className="phone-field">
+      <legend>전화번호</legend>
+      <div className="phone-parts" onPaste={pastePhone}>
+        <input
+          type="tel"
+          inputMode="numeric"
+          value="010"
+          readOnly
+          aria-label="전화번호 앞자리"
+        />
+        <span aria-hidden="true">-</span>
+        <input
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          value={middle}
+          onChange={(event) => changePart("middle", event.target.value)}
+          required
+          minLength={4}
+          maxLength={4}
+          pattern="[0-9]{4}"
+          placeholder="0000"
+          aria-label="전화번호 가운데 네 자리"
+        />
+        <span aria-hidden="true">-</span>
+        <input
+          ref={lastPartRef}
+          type="tel"
+          inputMode="numeric"
+          value={last}
+          onChange={(event) => changePart("last", event.target.value)}
+          required
+          minLength={4}
+          maxLength={4}
+          pattern="[0-9]{4}"
+          placeholder="0000"
+          aria-label="전화번호 마지막 네 자리"
+        />
+      </div>
+      <small className="input-hint">
+        예약 연락을 위해 형식만 확인하며 인증 문자는 발송하지 않습니다.
+      </small>
+    </fieldset>
+  );
+}
+
 // 회원가입과 로그인 입력을 검증하고 인증 API를 호출한다.
 function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode);
@@ -3705,9 +3790,12 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [canRestore, setCanRestore] = useState(false);
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
   const [policyKind, setPolicyKind] = useState(null);
   const update = (event) => {
+    if (event.target.name === "username" || event.target.name === "password")
+      setCanRestore(false);
     setForm((previous) => ({
       ...previous,
       [event.target.name]: event.target.value,
@@ -3735,16 +3823,24 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
         setEmailVerificationToken("");
         setMode("login");
       } else {
-        const user = await api("/api/users/login", {
-          method: "POST",
-          body: json({ username: form.username, password: form.password }),
-        });
+        const user = await api(
+          mode === "restore" ? "/api/users/restore" : "/api/users/login",
+          {
+            method: "POST",
+            body: json({ username: form.username, password: form.password }),
+          },
+        );
         onSuccess(user);
         close();
-        notify(`${user.fullName}님, 반갑습니다!`);
+        notify(
+          mode === "restore"
+            ? "계정이 복구됐습니다."
+            : `${user.fullName}님, 반갑습니다!`,
+        );
       }
     } catch (caught) {
       setError(caught.message);
+      setCanRestore(mode === "login" && caught.status === 423);
     } finally {
       setBusy(false);
     }
@@ -3764,12 +3860,18 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           </span>
           <span className="eyebrow">WELCOME TO SPORTMAP</span>
           <h2>
-            {mode === "login" ? "다시 만나서 반가워요." : "함께 움직여 볼까요?"}
+            {mode === "login"
+              ? "다시 만나서 반가워요."
+              : mode === "restore"
+                ? "계정을 복구할까요?"
+                : "함께 움직여 볼까요?"}
           </h2>
           <p>
             {mode === "login"
               ? "운동을 시작하는 가장 쉬운 방법, SportMap."
-              : "몇 가지 정보만 입력하면 시작할 수 있어요."}
+              : mode === "restore"
+                ? "탈퇴 요청 후 7일 안에는 기존 계정으로 돌아올 수 있습니다."
+                : "몇 가지 정보만 입력하면 시작할 수 있어요."}
           </p>
           <form onSubmit={submit}>
             {mode === "signup" && (
@@ -3860,26 +3962,12 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
                   }
                   onVerified={setEmailVerificationToken}
                 />
-                <label>
-                  전화번호
-                  <input
-                    name="phoneNumber"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    value={form.phoneNumber}
-                    onChange={update}
-                    required
-                    maxLength={13}
-                    pattern="010[- ]?[0-9]{4}[- ]?[0-9]{4}"
-                    placeholder="010-1234-5678"
-                    title="010으로 시작하는 휴대폰 번호를 입력해 주세요"
-                  />
-                  <small className="input-hint">
-                    예약 연락을 위해 형식만 확인하며 인증 문자는 발송하지
-                    않습니다.
-                  </small>
-                </label>
+                <PhoneNumberFields
+                  value={form.phoneNumber}
+                  onChange={(phoneNumber) =>
+                    setForm((previous) => ({ ...previous, phoneNumber }))
+                  }
+                />
                 <label className="consent-check">
                   <input type="checkbox" required />{" "}
                   <span>
@@ -3903,7 +3991,13 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
             )}
             {error && <div className="form-error">{error}</div>}
             <button className="button button-dark wide" disabled={busy}>
-              {busy ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}{" "}
+              {busy
+                ? "처리 중..."
+                : mode === "login"
+                  ? "로그인"
+                  : mode === "restore"
+                    ? "계정 복구"
+                    : "회원가입"}{" "}
               <ArrowRight size={17} />
             </button>
           </form>
@@ -3914,6 +4008,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
                 setEmailVerificationToken("");
                 setMode(mode === "login" ? "signup" : "login");
                 setError("");
+                setCanRestore(false);
               }}
             >
               {mode === "login" ? "회원가입하기" : "로그인하기"}
@@ -3922,6 +4017,35 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           {mode === "login" && (
             <div className="demo-hint">
               <Sparkles size={15} /> 계정이 없다면 회원가입 후 이용해 주세요.
+            </div>
+          )}
+          {mode === "login" && canRestore && (
+            <div className="auth-switch">
+              탈퇴 유예 중인 계정입니다.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("restore");
+                  setError("");
+                  setCanRestore(false);
+                }}
+              >
+                탈퇴 계정 복구
+              </button>
+            </div>
+          )}
+          {mode === "restore" && (
+            <div className="auth-switch">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                  setCanRestore(false);
+                }}
+              >
+                로그인으로 돌아가기
+              </button>
             </div>
           )}
         </div>
@@ -4228,6 +4352,17 @@ export default function App() {
         openAuth={() => setAuthOpen(true)}
       />
     );
+  const routedContent = (
+    <Suspense
+      fallback={
+        <section className="page-section">
+          <LoadingCards count={2} />
+        </section>
+      }
+    >
+      {content}
+    </Suspense>
+  );
   return (
     <div className="app-shell">
       {path === "/admin" && user?.role === "ADMIN" ? (
@@ -4239,7 +4374,7 @@ export default function App() {
               <button onClick={onLogout}>로그아웃</button>
             </div>
           </header>
-          <main className="admin-main">{content}</main>
+          <main className="admin-main">{routedContent}</main>
         </div>
       ) : (
         <>
@@ -4274,7 +4409,7 @@ export default function App() {
                   {siteSettings.announcement}
                 </div>
               )}
-              {content}
+              {routedContent}
               <footer className="footer">
                 <span>
                   © {new Date().getFullYear()} SportMap. 오늘의 움직임을

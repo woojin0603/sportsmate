@@ -3307,6 +3307,42 @@ textarea:focus-visible {
   font-weight: 500;
   line-height: 1.5;
 }
+.phone-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.phone-field legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: #58705e;
+  font-size: 14px;
+  font-weight: 800;
+}
+.phone-parts {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 1fr) auto minmax(
+      0,
+      1fr
+    );
+  align-items: center;
+  gap: 8px;
+}
+.phone-parts input {
+  min-width: 0;
+  text-align: center;
+}
+.phone-parts input[readonly] {
+  background: #f4f7f2;
+  color: #58705e;
+}
+.phone-parts span {
+  color: #8ba08e;
+  font-weight: 800;
+}
 .modal .email-action {
   border: 1px solid #bdd6b9;
   border-radius: 8px;

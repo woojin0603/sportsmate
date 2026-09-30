@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace 'kr.or.sportmap.mobile'
     compileSdk 35
@@ -12,15 +18,23 @@ android {
         minSdk 24
         targetSdk 35
         versionCode 1
-        versionName '0.1.0-test'
+        versionName '1.0.0'
     }
 
     signingConfigs {
         debug {
-            storeFile rootProject.file('.keys/debug.keystore')
+            //storeFile rootProject.file('.keys/debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
+        }
+        if (keystorePropertiesFile.exists()) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
         }
     }
 
@@ -31,8 +45,12 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 

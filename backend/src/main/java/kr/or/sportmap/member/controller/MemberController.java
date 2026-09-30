@@ -126,6 +126,17 @@ public class MemberController {
     response.addHeader(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO));
   }
 
+  /** 탈퇴 요청 후 7일 안에 아이디와 비밀번호로 계정을 복구한다. */
+  @PostMapping("/restore")
+  public MemberResponse restore(
+    @Valid @RequestBody LoginRequest request,
+    HttpServletResponse response
+  ) {
+    Member member = service.restore(request.username(), request.password());
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie(service.issueToken(member), Duration.ofMinutes(15)));
+    return MemberResponse.of(member);
+  }
+
   @GetMapping("/mypage")
   public MemberResponse mypage(@AuthenticationPrincipal Jwt jwt) {
     return MemberResponse.of(service.findAuthenticated(jwt.getSubject()));

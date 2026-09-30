@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -135,6 +136,17 @@ public class MemberService {
         "아이디 또는 비밀번호가 올바르지 않습니다"
       );
     }
+    if (member.deletionRequestedAt != null) {
+      HttpStatus status = member.deletionRequestedAt.plus(7, ChronoUnit.DAYS).isAfter(now)
+        ? HttpStatus.LOCKED
+        : HttpStatus.GONE;
+      throw new ResponseStatusException(
+        status,
+        status == HttpStatus.LOCKED
+          ? "탈퇴 유예 중인 계정입니다. 계정 복구를 이용해 주세요"
+          : "탈퇴 처리된 계정입니다"
+      );
+    }
     loginAttempts.remove(key);
     return member;
   }
@@ -177,7 +189,7 @@ public class MemberService {
     member.passwordHash = passwords.encode(newPassword);
   }
 
-  /** 회원과 직접 연결된 활동 데이터를 함께 삭제한다. */
+  /** 탈퇴 요청을 기록하고 7일 동안 개인정보와 활동 데이터를 보존한다. */
   @Transactional
   public void withdraw(String subject, String password) {
     Member member = findAuthenticated(subject);
@@ -193,6 +205,47 @@ public class MemberService {
         "비밀번호가 올바르지 않습니다"
       );
     }
+    member.deletionRequestedAt = Instant.now();
+  }
+
+  /** 유예기간 안에 본인 인증 후 탈퇴 요청을 취소한다. */
+  @Transactional
+  public Member restore(String username, String password) {
+    Member member = repository.findByUsername(username.trim()).orElseThrow(() ->
+      new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다")
+    );
+    if (!passwords.matches(password, member.passwordHash)) throw new ResponseStatusException(
+      HttpStatus.UNAUTHORIZED,
+      "아이디 또는 비밀번호가 올바르지 않습니다"
+    );
+    if (member.deletionRequestedAt == null) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "탈퇴 유예 중인 계정이 아닙니다"
+    );
+    if (!member.deletionRequestedAt.plus(7, ChronoUnit.DAYS).isAfter(Instant.now())) {
+      hardDelete(member);
+      throw new ResponseStatusException(HttpStatus.GONE, "복구 가능 기간이 지났습니다");
+    }
+    member.deletionRequestedAt = null;
+    return member;
+  }
+
+  /** 관리자가 이메일 인증 없이 회원을 등록한다. */
+  @Transactional
+  public Member createByAdmin(String fullName, String username, String password, LocalDate birthDate, String email, String phoneNumber, Member.Gender gender, Member.Role role) {
+    String normalizedUsername = username.trim();
+    String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+    if (repository.existsByUsername(normalizedUsername) || repository.existsByEmail(normalizedEmail)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "아이디 또는 이메일이 이미 사용 중입니다");
+    }
+    Member member = new Member(fullName.trim(), normalizedUsername, passwords.encode(password), birthDate, normalizedEmail, normalizePhone(phoneNumber), gender);
+    member.role = role;
+    return repository.saveAndFlush(member);
+  }
+
+  /** 관리자 삭제 및 유예기간 만료 시 회원 활동과 계정을 영구 삭제한다. */
+  @Transactional
+  public void hardDelete(Member member) {
     Long id = member.id;
     jdbc.update(
       "update comments set parent_id = null where parent_id in (select id from comments where author_id = ?)",
@@ -209,6 +262,34 @@ public class MemberService {
     jdbc.update("delete from fitness_assessments where member_id = ?", id);
     jdbc.update("delete from member_abilities where member_id = ?", id);
     repository.delete(member);
+  }
+
+  @Transactional
+  public void hardDeleteById(Long id) {
+    Member member = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if ("admin".equals(member.username)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기본 관리자 계정은 삭제할 수 없습니다");
+    hardDelete(member);
+  }
+
+  /** 관리자가 탈퇴 유예 중인 회원을 즉시 활성 상태로 복구한다. */
+  @Transactional
+  public Member restoreByAdmin(Long id) {
+    Member member = repository.findById(id).orElseThrow(() ->
+      new ResponseStatusException(HttpStatus.NOT_FOUND)
+    );
+    if (member.deletionRequestedAt == null) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "탈퇴 상태인 회원이 아닙니다"
+    );
+    member.deletionRequestedAt = null;
+    return member;
+  }
+
+  /** 매일 새벽 유예기간이 끝난 탈퇴 계정을 영구 삭제한다. */
+  @Scheduled(cron = "0 15 3 * * *", zone = "Asia/Seoul")
+  @Transactional
+  public void purgeExpiredWithdrawals() {
+    repository.findByDeletionRequestedAtBefore(Instant.now().minus(7, ChronoUnit.DAYS)).forEach(this::hardDelete);
   }
 
   public String issueToken(Member member) {

@@ -22,12 +22,20 @@ web/node_modules/
 web/dist/
 web/.vite/
 web/.env.local
+web/.npm-cache-codex/
+
+# Obsolete duplicate workspaces
+/frontend/
+/mobile/
 
 # Android
 android/local.properties
 android/.gradle/
 android/.idea/
 android/.keys/
+android/keystore.properties
+*.jks
+*.keystore
 android/app/build/
 
 # Generated and private files

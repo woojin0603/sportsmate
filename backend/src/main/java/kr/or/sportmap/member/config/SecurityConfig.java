@@ -94,6 +94,7 @@ public class SecurityConfig {
         path.equals("/api/csrf") ||
         path.equals("/api/site-settings") ||
         path.equals("/api/users/login") ||
+        path.equals("/api/users/restore") ||
         path.equals("/api/users/signup") ||
         path.equals("/api/users/email/send") ||
         path.equals("/api/users/email/status") ||
@@ -187,6 +188,7 @@ public class SecurityConfig {
           "/api/users/email/send",
           "/api/users/email/status",
           "/api/users/login",
+          "/api/users/restore",
           "/api/import/facilities",
           "/api/import/programs"
         )

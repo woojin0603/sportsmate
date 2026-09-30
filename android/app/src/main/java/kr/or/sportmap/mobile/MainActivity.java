@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
     bar.setBackgroundColor(Color.rgb(23, 62, 50));
 
     TextView title = new TextView(this);
-    title.setText("SportMap");
+    title.setText(R.string.toolbar_title);
     title.setTextColor(Color.WHITE);
     title.setTextSize(20);
     title.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -132,7 +132,7 @@ public class MainActivity extends Activity {
 
     CookieManager cookies = CookieManager.getInstance();
     cookies.setAcceptCookie(true);
-    cookies.setAcceptThirdPartyCookies(webView, true);
+    cookies.setAcceptThirdPartyCookies(webView, false);
 
     webView.setWebViewClient(new WebViewClient() {
       @Override

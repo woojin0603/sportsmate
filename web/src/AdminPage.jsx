@@ -12,7 +12,7 @@ import { formatPhone } from "./phone";
 const categories = [
   ["site", "사이트 설정", Settings],
   ["popup", "팝업 설정", Bell],
-  ["users", "회원 권한 설정", UsersRound],
+  ["users", "회원 관리", UsersRound],
   ["notices", "공지사항 관리", MonitorCog],
   ["qna", "Q&A", MessageCircle],
 ];
@@ -40,6 +40,16 @@ export default function AdminPage({ notify, onSettingsSaved }) {
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [userForm, setUserForm] = useState({
+    fullName: "",
+    username: "",
+    password: "",
+    birthDate: "",
+    email: "",
+    phoneNumber: "01000000001",
+    gender: "OTHER",
+    role: "USER",
+  });
   const [noticeForm, setNoticeForm] = useState({
     id: null,
     title: "",
@@ -113,6 +123,59 @@ export default function AdminPage({ notify, onSettingsSaved }) {
         body: json({ role }),
       });
       notify(`${member.username} 권한을 변경했습니다.`);
+      setRefresh((value) => value + 1);
+    } catch (failure) {
+      notify(failure.message, "error");
+    }
+  }
+  async function createUser(event) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await api("/api/admin/users", { method: "POST", body: json(userForm) });
+      notify(`${userForm.username} 회원을 등록했습니다.`);
+      setUserForm({
+        fullName: "",
+        username: "",
+        password: "",
+        birthDate: "",
+        email: "",
+        phoneNumber: "01000000001",
+        gender: "OTHER",
+        role: "USER",
+      });
+      setRefresh((value) => value + 1);
+    } catch (failure) {
+      notify(failure.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function deleteUser(member) {
+    if (
+      !window.confirm(
+        `${member.username} 회원과 활동 데이터를 영구 삭제할까요?`,
+      )
+    )
+      return;
+    try {
+      await api(`/api/admin/users/${member.id}`, { method: "DELETE" });
+      notify(`${member.username} 회원을 삭제했습니다.`);
+      setRefresh((value) => value + 1);
+    } catch (failure) {
+      notify(failure.message, "error");
+    }
+  }
+  async function restoreUser(member) {
+    if (
+      !window.confirm(
+        `${member.username} 회원의 탈퇴 요청을 취소하고 복구할까요?`,
+      )
+    )
+      return;
+    try {
+      await api(`/api/admin/users/${member.id}/restore`, { method: "POST" });
+      notify(`${member.username} 회원을 복구했습니다.`);
       setRefresh((value) => value + 1);
     } catch (failure) {
       notify(failure.message, "error");
@@ -234,6 +297,12 @@ export default function AdminPage({ notify, onSettingsSaved }) {
               page={page}
               setPage={setPage}
               changeRole={changeRole}
+              form={userForm}
+              setForm={setUserForm}
+              createUser={createUser}
+              deleteUser={deleteUser}
+              restoreUser={restoreUser}
+              busy={busy}
             />
           )}
           {category === "notices" && (
@@ -363,10 +432,99 @@ function PopupSettings({ settings, setSettings, busy, save }) {
   );
 }
 
-function UserSettings({ users, page, setPage, changeRole }) {
+function UserSettings({
+  users,
+  page,
+  setPage,
+  changeRole,
+  form,
+  setForm,
+  createUser,
+  deleteUser,
+  restoreUser,
+  busy,
+}) {
   return (
     <>
-      <h2>회원 권한 설정</h2>
+      <h2>회원 관리</h2>
+      <form className="admin-notice-form" onSubmit={createUser}>
+        <div className="form-two">
+          <input
+            required
+            maxLength={50}
+            placeholder="성명"
+            value={form.fullName}
+            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+          />
+          <input
+            required
+            minLength={3}
+            maxLength={30}
+            pattern="[A-Za-z][A-Za-z0-9_]{2,29}"
+            placeholder="아이디"
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+          />
+        </div>
+        <div className="form-two">
+          <input
+            required
+            minLength={8}
+            maxLength={72}
+            type="password"
+            placeholder="비밀번호"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+          <input
+            required
+            type="date"
+            value={form.birthDate}
+            onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+          />
+        </div>
+        <div className="form-two">
+          <input
+            required
+            type="email"
+            placeholder="이메일"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <input
+            required
+            pattern="010[0-9]{8}"
+            placeholder="전화번호 11자리"
+            value={form.phoneNumber}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 11),
+              })
+            }
+          />
+        </div>
+        <div className="form-two">
+          <select
+            value={form.gender}
+            onChange={(e) => setForm({ ...form, gender: e.target.value })}
+          >
+            <option value="OTHER">기타</option>
+            <option value="MALE">남성</option>
+            <option value="FEMALE">여성</option>
+          </select>
+          <select
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+          >
+            <option value="USER">일반 사용자</option>
+            <option value="ADMIN">관리자</option>
+          </select>
+        </div>
+        <button className="button button-dark" disabled={busy}>
+          회원 등록
+        </button>
+      </form>
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
@@ -376,6 +534,8 @@ function UserSettings({ users, page, setPage, changeRole }) {
               <th>이메일</th>
               <th>전화번호</th>
               <th>권한</th>
+              <th>상태</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -394,6 +554,18 @@ function UserSettings({ users, page, setPage, changeRole }) {
                     <option value="USER">일반 사용자</option>
                     <option value="ADMIN">관리자</option>
                   </select>
+                </td>
+                <td>{member.deletionRequestedAt ? "탈퇴" : "가입"}</td>
+                <td>
+                  {member.deletionRequestedAt && (
+                    <button onClick={() => restoreUser(member)}>복구</button>
+                  )}
+                  <button
+                    disabled={member.username === "admin"}
+                    onClick={() => deleteUser(member)}
+                  >
+                    삭제
+                  </button>
                 </td>
               </tr>
             ))}

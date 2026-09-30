@@ -2,6 +2,8 @@ package kr.or.sportmap.member.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -70,12 +72,14 @@ class MemberServiceSecurityTest {
     assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.getStatusCode());
   }
 
-  /** 회원 탈퇴는 연결된 활동을 먼저 삭제한 뒤 회원 행을 제거한다. */
+  /** 회원 탈퇴는 즉시 삭제하지 않고 7일 복구 유예 상태로 전환한다. */
   @Test
-  void deletesMemberActivitiesOnWithdrawal() {
+  void defersDeletionAndAllowsRestoration() {
     when(members.findById(7L)).thenReturn(Optional.of(member));
+    when(members.findByUsername("user1234")).thenReturn(Optional.of(member));
     service.withdraw("7", "Correct123!");
-    verify(jdbc, times(7)).update(anyString(), any(Object[].class));
-    verify(members).delete(member);
+    assertNotNull(member.deletionRequestedAt);
+    service.restore("user1234", "Correct123!");
+    assertNull(member.deletionRequestedAt);
   }
 }

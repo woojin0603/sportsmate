@@ -1,5 +1,17 @@
 # 검증 기록
 
+## 2026-09-30 제출 준비 검증
+
+- 백엔드 전체 Gradle 테스트 통과
+- 이메일 링크 인증, JWT·CSRF, PDF 판독·점수화, 공공시설 지역 처리 테스트 통과
+- `/api/health`가 DB `select 1` 성공 시 `UP`, 실패 시 상세 접속정보 없이 `503 DOWN`을 반환하는 테스트 통과
+- Android `lintRelease assembleRelease` 통과
+- Android 릴리스 Lint는 WebView 실행에 필요한 JavaScript 활성화 경고 1건만 남음
+- Android 릴리스는 R8 코드 축소와 리소스 축소를 적용하며, 배포 전 별도 서명 키 설정이 필요함
+- React 소스 Prettier 검사 통과. Codex 실행 환경에서는 Vite 내부 Windows 하위 프로세스가 `EPERM`으로 차단되어 운영 번들은 일반 터미널의 `npm run build:spring`으로 생성함
+
+아래 2026-09-13 기록은 최초 구현 당시의 검증 이력으로 보존합니다.
+
 2026-09-13, 로컬 H2 프로필에서 서버를 기동해 HTTP 검사를 수행했습니다.
 
 | 검사 | 결과 |

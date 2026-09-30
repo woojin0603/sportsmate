@@ -53,6 +53,9 @@ public class Member {
   @Column(nullable = false)
   public Instant createdAt = Instant.now();
 
+  /** 탈퇴 요청 후 7일 동안 계정을 보존하고 복구할 수 있게 한다. */
+  public Instant deletionRequestedAt;
+
   protected Member() {}
 
   public Long getId() {

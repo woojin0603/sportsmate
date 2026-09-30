@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">SportMap 테스트</string>
+    <string name="app_name">SportMap</string>
+    <string name="toolbar_title">SportMap</string>
 </resources>

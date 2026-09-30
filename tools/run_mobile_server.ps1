@@ -1,6 +1,7 @@
 param(
   [int]$Port = 8080,
-  [switch]$PhysicalDevice
+  [switch]$PhysicalDevice,
+  [switch]$DemoData
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,8 +50,9 @@ try {
   $env:SPRING_PROFILES_ACTIVE = "local"
   $mobileDatabase = "jdbc:h2:file:./sportmap-mobile-local;MODE=MySQL;DATABASE_TO_LOWER=TRUE"
   $serverAddress = if ($PhysicalDevice) { "0.0.0.0" } else { "127.0.0.1" }
-  $verificationModes = if ($PhysicalDevice) { " --app.mail.mode=disabled --app.sms.mode=disabled" } else { "" }
-  $bootArguments = "--server.address=$serverAddress --server.port=$Port --spring.datasource.url=$mobileDatabase --app.demo.enabled=true$verificationModes"
+  $verificationModes = if ($PhysicalDevice) { " --app.mail.mode=disabled" } else { "" }
+  $demoDataEnabled = if ($DemoData) { "true" } else { "false" }
+  $bootArguments = "--server.address=$serverAddress --server.port=$Port --spring.datasource.url=$mobileDatabase --app.demo.enabled=$demoDataEnabled$verificationModes"
   & .\gradlew.bat bootRun --args=$bootArguments
   if ($LASTEXITCODE -ne 0) { throw "모바일 테스트 서버를 시작하지 못했습니다." }
 } finally {

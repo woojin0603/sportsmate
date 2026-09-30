@@ -26,6 +26,8 @@ server:
   address: 0.0.0.0
   port: ${PORT:8080}
   shutdown: graceful
+  error:
+    include-message: never
 
 app:
   auth:
@@ -35,7 +37,5 @@ app:
     require-strong-password: true
   mail:
     mode: ${EMAIL_MODE:live}
-  sms:
-    mode: ${SMS_MODE:disabled}
   demo:
-    enabled: true
+    enabled: false

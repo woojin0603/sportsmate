@@ -39,9 +39,6 @@ app:
   admin:
     seed-enabled: ${ADMIN_SEED_ENABLED:false}
     initial-password: ${ADMIN_INITIAL_PASSWORD:}
-  sms:
-    mode: ${SMS_MODE:disabled}
-    daily-limit: ${SMS_DAILY_LIMIT:100}
   mail:
     mode: ${EMAIL_MODE:disabled}
     public-base-url: ${MAIL_PUBLIC_BASE_URL:}
