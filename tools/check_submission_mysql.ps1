@@ -23,7 +23,34 @@ default-character-set=utf8mb4
 "@
   $encoding = New-Object System.Text.UTF8Encoding($false)
   [IO.File]::WriteAllText($tempClient, $clientConfig, $encoding)
-  & $mysql "--defaults-extra-file=$tempClient" --execute="SELECT DATABASE() AS db, CURRENT_USER() AS account, VERSION() AS version; SHOW TABLES;"
+  $auditSql = @"
+SELECT DATABASE() AS db, CURRENT_USER() AS account, VERSION() AS version;
+SHOW TABLES;
+SELECT 'members' item, COUNT(*) total FROM members
+UNION ALL SELECT 'facilities', COUNT(*) FROM facilities
+UNION ALL SELECT 'programs', COUNT(*) FROM programs
+UNION ALL SELECT 'reservations', COUNT(*) FROM reservations
+UNION ALL SELECT 'email_verifications', COUNT(*) FROM email_verifications;
+SELECT role,
+       CASE WHEN deletion_requested_at IS NULL THEN 'ACTIVE' ELSE 'WITHDRAWAL_PENDING' END status,
+       COUNT(*) total
+FROM members
+GROUP BY role, status;
+SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = 'sportmap_submission'
+  AND TABLE_NAME = 'members'
+  AND COLUMN_NAME IN ('username', 'email', 'phone_number', 'role', 'deletion_requested_at')
+ORDER BY ORDINAL_POSITION;
+SELECT INDEX_NAME,
+       GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) columns_list,
+       NON_UNIQUE
+FROM information_schema.STATISTICS
+WHERE TABLE_SCHEMA = 'sportmap_submission'
+  AND TABLE_NAME = 'members'
+GROUP BY INDEX_NAME, NON_UNIQUE;
+"@
+  & $mysql "--defaults-extra-file=$tempClient" "--execute=$auditSql"
   if ($LASTEXITCODE -ne 0) { throw "제출용 MySQL 연결 확인에 실패했습니다." }
 }
 finally {

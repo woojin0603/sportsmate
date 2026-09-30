@@ -48,3 +48,17 @@ powershell -ExecutionPolicy Bypass -File .\tools\backup_submission_mysql.ps1
 서버에 MySQL이 따로 있으면 `backend/config/submission-secrets.properties`의 URL을 서버 주소로 변경하거나 `DB_URL`, `DB_USER`, `DB_PASSWORD` 환경 변수를 설정합니다. HTTPS 주소가 준비되면 `app.auth.secure-cookie=true` 또는 `SECURE_COOKIE=true`로 바꿉니다.
 
 `backend/config/submission-secrets.properties`는 저장소에 커밋하거나 공유하면 안 됩니다. 새 컴퓨터에서는 초기화 스크립트를 다시 실행하거나 서버의 비밀 저장소에서 같은 항목을 주입합니다.
+
+## 기존 제출 DB 갱신 및 확인
+
+최신 코드에서 회원탈퇴 유예 컬럼 등 스키마 변경이 추가된 경우 다음 순서로 실행합니다.
+
+    powershell -ExecutionPolicy Bypass -File .\tools\migrate_submission_mysql.ps1
+    powershell -ExecutionPolicy Bypass -File .\tools\check_submission_mysql.ps1
+
+마이그레이션은 여러 번 실행해도 안전합니다. 애플리케이션 DB 계정에는 DROP 권한을 주지 않으며, 제거된 기능의 과거 테이블은 DB 관리자가 백업 후 별도로 정리합니다.
+MySQL root 비밀번호를 잊었지만 제출 DB와 sportmap_app 계정이 이미 정상이라면 전체 초기화 대신 관리자 비밀번호 설정만 교체합니다.
+
+    powershell -ExecutionPolicy Bypass -File .\tools\configure_submission_admin.ps1
+
+설정한 비밀번호는 다음 제출 프로필 시작 시 기존 admin 계정에 BCrypt로 반영됩니다.
