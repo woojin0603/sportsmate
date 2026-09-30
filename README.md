@@ -139,3 +139,5 @@ cd backend
 4. 같은 서명키로 release APK를 다시 빌드합니다.
 5. Wi-Fi와 모바일 데이터에서 회원가입부터 예약·탈퇴 복구까지 점검합니다.
 6. 심사 기간 동안 서버와 DB를 유지하고 장애 상황에 대비한 시연 영상을 준비합니다.
+
+Railway를 이용한 최종 HTTPS 배포 순서와 환경변수는 [Railway 제출 배포](docs/RAILWAY_DEPLOYMENT.md)를 따릅니다.
