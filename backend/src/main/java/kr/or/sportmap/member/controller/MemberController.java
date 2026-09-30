@@ -133,7 +133,10 @@ public class MemberController {
     HttpServletResponse response
   ) {
     Member member = service.restore(request.username(), request.password());
-    response.addHeader(HttpHeaders.SET_COOKIE, cookie(service.issueToken(member), Duration.ofMinutes(15)));
+    response.addHeader(
+      HttpHeaders.SET_COOKIE,
+      cookie(service.issueToken(member), Duration.ofMinutes(15))
+    );
     return MemberResponse.of(member);
   }
 

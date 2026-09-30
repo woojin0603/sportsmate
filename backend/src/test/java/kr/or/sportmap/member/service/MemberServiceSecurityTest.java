@@ -1,9 +1,9 @@
 package kr.or.sportmap.member.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -68,6 +68,24 @@ class MemberServiceSecurityTest {
     ResponseStatusException blocked = assertThrows(
       ResponseStatusException.class,
       () -> service.login("user1234", "Correct123!")
+    );
+    assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.getStatusCode());
+  }
+
+  /** 탈퇴 계정 복구도 로그인과 같은 반복 실패 제한을 적용한다. */
+  @Test
+  void blocksRepeatedRestoreFailures() {
+    when(members.findByUsername("user1234")).thenReturn(Optional.of(member));
+    for (int i = 0; i < 5; i++) {
+      ResponseStatusException failure = assertThrows(
+        ResponseStatusException.class,
+        () -> service.restore("user1234", "wrong-password")
+      );
+      assertEquals(HttpStatus.UNAUTHORIZED, failure.getStatusCode());
+    }
+    ResponseStatusException blocked = assertThrows(
+      ResponseStatusException.class,
+      () -> service.restore("user1234", "Correct123!")
     );
     assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.getStatusCode());
   }

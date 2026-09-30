@@ -10,13 +10,13 @@ import kr.or.sportmap.member.repository.MemberRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -108,6 +108,26 @@ public class MemberService {
 
   @Transactional(readOnly = true)
   public Member login(String username, String password) {
+    Member member = authenticateCredentials(username, password);
+    Instant now = Instant.now();
+    if (member.deletionRequestedAt != null) {
+      HttpStatus status = member.deletionRequestedAt
+        .plus(7, ChronoUnit.DAYS)
+        .isAfter(now)
+        ? HttpStatus.LOCKED
+        : HttpStatus.GONE;
+      throw new ResponseStatusException(
+        status,
+        status == HttpStatus.LOCKED
+          ? "탈퇴 유예 중인 계정입니다. 계정 복구를 이용해 주세요"
+          : "탈퇴 처리된 계정입니다"
+      );
+    }
+    return member;
+  }
+
+  /** 로그인과 계정 복구에 동일한 반복 시도 제한을 적용해 비밀번호 대입을 차단한다. */
+  private Member authenticateCredentials(String username, String password) {
     String key = username.trim().toLowerCase(Locale.ROOT);
     Instant now = Instant.now();
     loginAttempts
@@ -134,17 +154,6 @@ public class MemberService {
       throw new ResponseStatusException(
         HttpStatus.UNAUTHORIZED,
         "아이디 또는 비밀번호가 올바르지 않습니다"
-      );
-    }
-    if (member.deletionRequestedAt != null) {
-      HttpStatus status = member.deletionRequestedAt.plus(7, ChronoUnit.DAYS).isAfter(now)
-        ? HttpStatus.LOCKED
-        : HttpStatus.GONE;
-      throw new ResponseStatusException(
-        status,
-        status == HttpStatus.LOCKED
-          ? "탈퇴 유예 중인 계정입니다. 계정 복구를 이용해 주세요"
-          : "탈퇴 처리된 계정입니다"
       );
     }
     loginAttempts.remove(key);
@@ -211,20 +220,21 @@ public class MemberService {
   /** 유예기간 안에 본인 인증 후 탈퇴 요청을 취소한다. */
   @Transactional
   public Member restore(String username, String password) {
-    Member member = repository.findByUsername(username.trim()).orElseThrow(() ->
-      new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다")
-    );
-    if (!passwords.matches(password, member.passwordHash)) throw new ResponseStatusException(
-      HttpStatus.UNAUTHORIZED,
-      "아이디 또는 비밀번호가 올바르지 않습니다"
-    );
+    Member member = authenticateCredentials(username, password);
     if (member.deletionRequestedAt == null) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
       "탈퇴 유예 중인 계정이 아닙니다"
     );
-    if (!member.deletionRequestedAt.plus(7, ChronoUnit.DAYS).isAfter(Instant.now())) {
+    if (
+      !member.deletionRequestedAt
+        .plus(7, ChronoUnit.DAYS)
+        .isAfter(Instant.now())
+    ) {
       hardDelete(member);
-      throw new ResponseStatusException(HttpStatus.GONE, "복구 가능 기간이 지났습니다");
+      throw new ResponseStatusException(
+        HttpStatus.GONE,
+        "복구 가능 기간이 지났습니다"
+      );
     }
     member.deletionRequestedAt = null;
     return member;
@@ -232,13 +242,36 @@ public class MemberService {
 
   /** 관리자가 이메일 인증 없이 회원을 등록한다. */
   @Transactional
-  public Member createByAdmin(String fullName, String username, String password, LocalDate birthDate, String email, String phoneNumber, Member.Gender gender, Member.Role role) {
+  public Member createByAdmin(
+    String fullName,
+    String username,
+    String password,
+    LocalDate birthDate,
+    String email,
+    String phoneNumber,
+    Member.Gender gender,
+    Member.Role role
+  ) {
     String normalizedUsername = username.trim();
     String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-    if (repository.existsByUsername(normalizedUsername) || repository.existsByEmail(normalizedEmail)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "아이디 또는 이메일이 이미 사용 중입니다");
+    if (
+      repository.existsByUsername(normalizedUsername) ||
+      repository.existsByEmail(normalizedEmail)
+    ) {
+      throw new ResponseStatusException(
+        HttpStatus.CONFLICT,
+        "아이디 또는 이메일이 이미 사용 중입니다"
+      );
     }
-    Member member = new Member(fullName.trim(), normalizedUsername, passwords.encode(password), birthDate, normalizedEmail, normalizePhone(phoneNumber), gender);
+    Member member = new Member(
+      fullName.trim(),
+      normalizedUsername,
+      passwords.encode(password),
+      birthDate,
+      normalizedEmail,
+      normalizePhone(phoneNumber),
+      gender
+    );
     member.role = role;
     return repository.saveAndFlush(member);
   }
@@ -266,17 +299,22 @@ public class MemberService {
 
   @Transactional
   public void hardDeleteById(Long id) {
-    Member member = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    if ("admin".equals(member.username)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기본 관리자 계정은 삭제할 수 없습니다");
+    Member member = repository
+      .findById(id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if ("admin".equals(member.username)) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "기본 관리자 계정은 삭제할 수 없습니다"
+    );
     hardDelete(member);
   }
 
   /** 관리자가 탈퇴 유예 중인 회원을 즉시 활성 상태로 복구한다. */
   @Transactional
   public Member restoreByAdmin(Long id) {
-    Member member = repository.findById(id).orElseThrow(() ->
-      new ResponseStatusException(HttpStatus.NOT_FOUND)
-    );
+    Member member = repository
+      .findById(id)
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     if (member.deletionRequestedAt == null) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
       "탈퇴 상태인 회원이 아닙니다"
@@ -289,7 +327,9 @@ public class MemberService {
   @Scheduled(cron = "0 15 3 * * *", zone = "Asia/Seoul")
   @Transactional
   public void purgeExpiredWithdrawals() {
-    repository.findByDeletionRequestedAtBefore(Instant.now().minus(7, ChronoUnit.DAYS)).forEach(this::hardDelete);
+    repository
+      .findByDeletionRequestedAtBefore(Instant.now().minus(7, ChronoUnit.DAYS))
+      .forEach(this::hardDelete);
   }
 
   public String issueToken(Member member) {

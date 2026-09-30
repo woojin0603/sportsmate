@@ -1,11 +1,11 @@
 package kr.or.sportmap.admin.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -113,18 +113,32 @@ public class AdminController {
   @PostMapping("/users")
   @ResponseStatus(HttpStatus.CREATED)
   public UserSummary createUser(@Valid @RequestBody UserCreateRequest request) {
-    return UserSummary.of(memberService.createByAdmin(
-      request.fullName(), request.username(), request.password(), request.birthDate(),
-      request.email(), request.phoneNumber(), request.gender(), request.role()
-    ));
+    return UserSummary.of(
+      memberService.createByAdmin(
+        request.fullName(),
+        request.username(),
+        request.password(),
+        request.birthDate(),
+        request.email(),
+        request.phoneNumber(),
+        request.gender(),
+        request.role()
+      )
+    );
   }
 
   /** 관리자가 기본 admin 외의 회원과 활동 데이터를 즉시 삭제한다. */
   @DeleteMapping("/users/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteUser(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
-    if (id.toString().equals(jwt.getSubject())) throw new ResponseStatusException(
-      HttpStatus.BAD_REQUEST, "현재 로그인한 자기 계정은 삭제할 수 없습니다"
+  public void deleteUser(
+    @PathVariable Long id,
+    @AuthenticationPrincipal Jwt jwt
+  ) {
+    if (
+      id.toString().equals(jwt.getSubject())
+    ) throw new ResponseStatusException(
+      HttpStatus.BAD_REQUEST,
+      "현재 로그인한 자기 계정은 삭제할 수 없습니다"
     );
     memberService.hardDeleteById(id);
   }

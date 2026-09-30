@@ -12,8 +12,8 @@ import kr.or.sportmap.community.domain.Question;
 import kr.or.sportmap.community.repository.CommentRepository;
 import kr.or.sportmap.community.repository.NoticeRepository;
 import kr.or.sportmap.community.repository.QuestionRepository;
-import kr.or.sportmap.member.service.MemberService;
 import kr.or.sportmap.member.domain.Member;
+import kr.or.sportmap.member.service.MemberService;
 import kr.or.sportmap.reservation.domain.Reservation;
 import kr.or.sportmap.reservation.repository.ReservationRepository;
 import org.springframework.data.domain.*;
@@ -128,7 +128,9 @@ public class BoardController {
     @AuthenticationPrincipal Jwt jwt
   ) {
     Member author = members.findAuthenticated(jwt.getSubject());
-    if (author.getRole() != Member.Role.ADMIN) throw new ResponseStatusException(
+    if (
+      author.getRole() != Member.Role.ADMIN
+    ) throw new ResponseStatusException(
       HttpStatus.FORBIDDEN,
       "관리자만 댓글을 작성할 수 있습니다"
     );
@@ -153,12 +155,7 @@ public class BoardController {
       );
     }
     Comment c = comments.save(
-      new Comment(
-        q,
-        author,
-        parent,
-        request.content().trim()
-      )
+      new Comment(q, author, parent, request.content().trim())
     );
     return new CommentResponse(
       c.id,
@@ -189,7 +186,7 @@ public class BoardController {
               "답변 · " + answer.author.fullName,
               answer.createdAt,
               question.answerReadAt != null &&
-              !question.answerReadAt.isBefore(answer.createdAt)
+                !question.answerReadAt.isBefore(answer.createdAt)
             )
           )
           .orElse(null)
@@ -222,8 +219,7 @@ public class BoardController {
         )
       )
       .toList();
-    return java.util.stream.Stream
-      .concat(answers.stream(), starts.stream())
+    return java.util.stream.Stream.concat(answers.stream(), starts.stream())
       .sorted(Comparator.comparing(NotificationResponse::occurredAt).reversed())
       .toList();
   }

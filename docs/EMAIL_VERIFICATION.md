@@ -55,3 +55,9 @@ cd backend
 - 이메일 발송은 이메일별 60초 간격과 클라이언트 주소별 시간당 10회로 제한합니다. 여러 서버 인스턴스를 운영할 때는 Redis나 API 게이트웨이의 공용 제한 정책으로 교체하세요.
 
 `cd backend; ./gradlew.bat test`로 정상 흐름, 만료·재발송·재사용, 모의/실제 모드 분리, SMTP 실패 처리, CSRF, 이메일 인증 후 가입·로그인을 검증합니다. 테스트는 메모리 DB와 모의 SMTP 전송을 사용합니다.
+
+제출용 비밀 설정 파일에 Gmail과 공개 인증 주소를 함께 저장하려면 프로젝트 루트에서 실행합니다.
+
+    powershell -ExecutionPolicy Bypass -File .\tools\configure_gmail.ps1 -ConfigPath "backend/config/submission-secrets.properties" -PublicBaseUrl "https://실제서비스도메인"
+
+스크립트는 app.mail.mode=live도 함께 저장하며 HTTP 주소, 경로·쿼리가 포함된 주소를 거부합니다.
