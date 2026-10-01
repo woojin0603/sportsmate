@@ -116,9 +116,54 @@ def load_facilities(key, cache_path, refresh=False):
     return {facility_key(row): row for row in rows if facility_key(row) != ":"}
 
 
-def import_row(base_url, import_key, course, facility):
-    address = " ".join(filter(None, [clean(facility.get("road_addr"), 450), clean(facility.get("faci_daddr"), 100)]))
-    region_name = " ".join(filter(None, [clean(facility.get("city_nm"), 40), clean(facility.get("local_nm"), 50)]))
+def warm_up_server(base_url, timeout, attempts):
+    url = base_url.rstrip("/") + "/api/health"
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = json.load(response)
+            if payload.get("status") == "UP":
+                print("MySportsMate server and database are ready", flush=True)
+                return
+            last_error = "health status is not UP"
+        except HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            last_error = f"HTTP {error.code}: {detail}"
+        except (URLError, ConnectionResetError, TimeoutError, OSError) as error:
+            last_error = str(error)
+        if attempt == attempts:
+            raise RuntimeError(
+                f"server health check failed after {attempts} attempts: {last_error}"
+            )
+        wait_seconds = min(2 ** (attempt - 1), 16)
+        print(
+            f"Server is waking up; retrying in {wait_seconds}s "
+            f"({attempt}/{attempts})",
+            flush=True,
+        )
+        time.sleep(wait_seconds)
+
+
+def import_row(base_url, import_key, course, facility, timeout, attempts):
+    address = " ".join(
+        filter(
+            None,
+            [
+                clean(facility.get("road_addr"), 450),
+                clean(facility.get("faci_daddr"), 100),
+            ],
+        )
+    )
+    region_name = " ".join(
+        filter(
+            None,
+            [
+                clean(facility.get("city_nm"), 40),
+                clean(facility.get("local_nm"), 50),
+            ],
+        )
+    )
     body = {
         "datasetCode": DATASET,
         "sourceKey": ("sv-course-" + str(course.get("course_no", "")))[:64],
@@ -135,7 +180,11 @@ def import_row(base_url, import_key, course, facility):
         "sportType": clean(course.get("item_nm"), 100),
         "scheduleText": clean(schedule(course), 500),
         "eligibility": clean(course.get("course_seta_desc_cn"), 500),
-        "fee": str(course.get("settl_amt")) if course.get("settl_amt") not in (None, "") else None,
+        "fee": (
+            str(course.get("settl_amt"))
+            if course.get("settl_amt") not in (None, "")
+            else None
+        ),
         "capacity": None,
         "beginsOn": None,
         "endsOn": None,
@@ -150,13 +199,33 @@ def import_row(base_url, import_key, course, facility):
         headers={"Content-Type": "application/json", "X-Import-Key": import_key},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            response.read()
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(f"SportMap import API HTTP {error.code}: {detail}") from error
-    return True
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                response.read()
+            return True
+        except HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            if error.code < 500 and error.code != 429:
+                raise RuntimeError(
+                    f"MySportsMate import API HTTP {error.code}: {detail}"
+                ) from error
+            last_error = f"HTTP {error.code}: {detail}"
+        except (URLError, ConnectionResetError, TimeoutError, OSError) as error:
+            last_error = str(error)
+        if attempt == attempts:
+            raise RuntimeError(
+                f"MySportsMate import API failed after {attempts} attempts: "
+                f"{last_error}"
+            )
+        wait_seconds = min(2 ** (attempt - 1), 16)
+        print(
+            f"Import request timed out or failed; retrying in {wait_seconds}s "
+            f"({attempt}/{attempts})",
+            flush=True,
+        )
+        time.sleep(wait_seconds)
+    return False
 
 
 def main():
@@ -169,9 +238,20 @@ def main():
         default="tools/.cache/sports-voucher-facilities.json",
     )
     parser.add_argument("--refresh-facilities", action="store_true")
+    parser.add_argument("--import-timeout", type=int, default=90)
+    parser.add_argument("--import-attempts", type=int, default=6)
     args = parser.parse_args()
-    if args.limit < 1 or args.page_size < 1 or args.page_size > 100:
-        parser.error("limit must be positive and page-size must be 1..100")
+    if (
+        args.limit < 1
+        or args.page_size < 1
+        or args.page_size > 100
+        or args.import_timeout < 1
+        or args.import_attempts < 1
+    ):
+        parser.error(
+            "limit, import-timeout and import-attempts must be positive; "
+            "page-size must be 1..100"
+        )
     import_key = os.environ.get("IMPORT_KEY", "").strip()
     if not import_key:
         parser.error("Set IMPORT_KEY to the same value as the server")
@@ -185,6 +265,11 @@ def main():
             key,
             args.facility_cache,
             args.refresh_facilities,
+        )
+        warm_up_server(
+            args.base_url,
+            args.import_timeout,
+            args.import_attempts,
         )
         while imported < args.limit:
             page += 1
@@ -203,7 +288,14 @@ def main():
                     continue
                 seen_courses.add(course_no)
                 facility = facilities.get(facility_key(course))
-                if facility is None or not import_row(args.base_url, import_key, course, facility):
+                if facility is None or not import_row(
+                    args.base_url,
+                    import_key,
+                    course,
+                    facility,
+                    args.import_timeout,
+                    args.import_attempts,
+                ):
                     skipped += 1
                     continue
                 imported += 1
