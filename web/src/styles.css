@@ -1800,7 +1800,9 @@ textarea:focus-visible {
 .program-facts > div {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 10px;
+  min-width: 0;
   font-size: 14px;
 }
 .program-facts span {
@@ -1808,11 +1810,12 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 .program-facts strong {
+  min-width: 0;
+  max-width: 72%;
   text-align: right;
   color: #435849;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .program-bottom {
   display: flex;
@@ -2750,9 +2753,10 @@ textarea:focus-visible {
 }
 .info-list > div {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
+  min-width: 0;
   padding: 14px 0;
   border-bottom: 1px solid #eff2ec;
   font-size: 15px;
@@ -2761,12 +2765,16 @@ textarea:focus-visible {
   border-bottom: 0;
 }
 .info-list span {
+  flex: 0 0 auto;
   color: #607367;
 }
 .info-list strong {
+  min-width: 0;
+  max-width: 72%;
   font-size: 15px;
   color: #3c5040;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 .account-actions {
   display: grid;

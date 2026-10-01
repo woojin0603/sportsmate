@@ -50,7 +50,7 @@ public class ReservationService {
         "공공 프로그램 신청은 programId만 보내세요"
       );
       if (
-        program.endsOn == null ||
+        program.endsOn != null &&
         program.endsOn.isBefore(LocalDate.now(ZoneId.of("Asia/Seoul")))
       ) throw new ResponseStatusException(
         HttpStatus.CONFLICT,
@@ -67,13 +67,18 @@ public class ReservationService {
         HttpStatus.CONFLICT,
         "이미 신청한 프로그램입니다"
       );
-      Instant periodStart = program.beginsOn
-        .atStartOfDay(ZoneId.of("Asia/Seoul"))
-        .toInstant();
-      Instant periodEnd = program.endsOn
-        .plusDays(1)
-        .atStartOfDay(ZoneId.of("Asia/Seoul"))
-        .toInstant();
+      // 원천 데이터에 운영 기간이 없으면 날짜를 임의 생성하지 않고 관심 항목으로 저장한다.
+      boolean hasCompletePeriod =
+        program.beginsOn != null && program.endsOn != null;
+      Instant periodStart = hasCompletePeriod
+        ? program.beginsOn.atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant()
+        : null;
+      Instant periodEnd = hasCompletePeriod
+        ? program.endsOn
+            .plusDays(1)
+            .atStartOfDay(ZoneId.of("Asia/Seoul"))
+            .toInstant()
+        : null;
       return reservations.save(
         new Reservation(
           member,
