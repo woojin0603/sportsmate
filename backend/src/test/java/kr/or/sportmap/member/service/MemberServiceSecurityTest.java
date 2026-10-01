@@ -64,6 +64,10 @@ class MemberServiceSecurityTest {
         () -> service.login("user1234", "wrong-password")
       );
       assertEquals(HttpStatus.UNAUTHORIZED, failure.getStatusCode());
+      assertEquals(
+        "아이디 또는 비밀번호가 일치하지 않습니다.",
+        failure.getReason()
+      );
     }
     ResponseStatusException blocked = assertThrows(
       ResponseStatusException.class,

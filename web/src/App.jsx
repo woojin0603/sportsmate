@@ -2046,7 +2046,9 @@ function ProgramCard({ item, navigate, onApply }) {
       <div className="program-facts">
         <div>
           <span>대상</span>
-          <strong>{item.eligibility || "누구나"}</strong>
+          <strong className="program-card-description">
+            {item.eligibility || "누구나"}
+          </strong>
         </div>
         <div>
           <span>운영 기간</span>
@@ -3839,7 +3841,11 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
         );
       }
     } catch (caught) {
-      setError(caught.message);
+      setError(
+        (mode === "login" || mode === "restore") && caught.status === 401
+          ? "아이디 또는 비밀번호가 일치하지 않습니다."
+          : caught.message,
+      );
       setCanRestore(mode === "login" && caught.status === 423);
     } finally {
       setBusy(false);

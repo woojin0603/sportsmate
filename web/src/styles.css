@@ -1817,6 +1817,13 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
   white-space: normal;
 }
+.program-facts .program-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
 .program-bottom {
   display: flex;
   align-items: flex-end;
