@@ -51,3 +51,5 @@ sportmap-mobile-local.*
 # Codex build verification caches
 **/.gradle-codex/
 android/.android-codex/
+__pycache__/
+*.py[cod]

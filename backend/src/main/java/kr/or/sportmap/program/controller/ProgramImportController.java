@@ -25,7 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/import/programs")
 public class ProgramImportController {
 
-  private static final String DATASET = "KS_PUBLIC_ALSFC_PROGRM_INFO";
+  private static final String DEFAULT_DATASET = "KS_PUBLIC_ALSFC_PROGRM_INFO";
   private final ProgramRepository programs;
   private final FacilityRepository facilities;
   private final FacilitySourceRepository sources;
@@ -57,11 +57,16 @@ public class ProgramImportController {
       HttpStatus.FORBIDDEN
     );
     if (
+      body.beginsOn() != null &&
+      body.endsOn() != null &&
       body.endsOn().isBefore(body.beginsOn())
     ) throw new ResponseStatusException(
       HttpStatus.BAD_REQUEST,
       "invalid period"
     );
+    String dataset = body.datasetCode() == null
+      ? DEFAULT_DATASET
+      : body.datasetCode();
     Region region =
       body.regionCode() == null
         ? null
@@ -79,7 +84,7 @@ public class ProgramImportController {
               )
             );
     FacilitySource source = sources
-      .findByDatasetCodeAndSourceKey(DATASET, body.facilitySourceKey())
+      .findByDatasetCodeAndSourceKey(dataset, body.facilitySourceKey())
       .orElse(null);
     Facility facility =
       source == null
@@ -98,7 +103,7 @@ public class ProgramImportController {
     facility.reservable = false;
     facilities.save(facility);
     if (source == null) sources.save(
-      new FacilitySource(facility, DATASET, body.facilitySourceKey(), null)
+      new FacilitySource(facility, dataset, body.facilitySourceKey(), null)
     );
     Program program = programs
       .findBySourceKey(body.sourceKey())
@@ -132,6 +137,7 @@ public class ProgramImportController {
   }
 
   public record ImportProgram(
+    @Size(max = 80) String datasetCode,
     @NotBlank @Size(max = 64) String sourceKey,
     @NotBlank @Size(max = 200) String facilitySourceKey,
     @NotBlank @Size(max = 200) String facilityName,
@@ -148,8 +154,8 @@ public class ProgramImportController {
     @Size(max = 500) String eligibility,
     @DecimalMin("0.0") BigDecimal fee,
     @Min(0) Integer capacity,
-    @NotNull LocalDate beginsOn,
-    @NotNull LocalDate endsOn,
+    LocalDate beginsOn,
+    LocalDate endsOn,
     @Size(max = 500) String registrationUrl
   ) {}
 }

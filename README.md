@@ -111,6 +111,16 @@ cd android
 
 시설·프로그램은 명칭, 주소, 지역, 운영 기간 등을 정규화해 검색에 사용합니다. 운동처방 자료는 개인식별값을 제거하고 일정 건수 이상인 사례만 집계합니다. 공공 프로그램의 실시간 접수 확정 여부는 제공되지 않으므로 SportMap의 신청 기록과 운영기관의 실제 접수를 구분합니다.
 
+승인된 스포츠강좌이용권 등록시설·등록강좌 OpenAPI의 최신 자료는 서버 기동과 분리된 동기화 도구로 적재합니다. API가 제공하지 않는 운영 기간, 정원, 신청 URL은 임의로 만들지 않습니다.
+
+```powershell
+$env:PUBLIC_FACILITY_SERVICE_KEY='공공데이터포털 개인 API 인증키'
+$env:IMPORT_KEY='서버와 동일한 수집 키'
+python .\tools\sync_sports_voucher.py --base-url https://배포주소 --limit 240
+```
+
+동일한 강좌 번호와 시설 식별자는 다시 실행해도 갱신되며 중복 생성되지 않습니다. 비밀값은 명령 기록이나 Git에 저장하지 말고 현재 PowerShell 세션에서만 설정합니다.
+
 ## 검증
 
 ```powershell
