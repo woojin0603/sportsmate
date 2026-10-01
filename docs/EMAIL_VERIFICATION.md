@@ -1,4 +1,4 @@
-# 이메일 인증 — 외부 발송 없는 시연과 SMTP 전환
+# 이메일 인증 — 로컬 시연, SMTP 및 Brevo API
 
 기본 `local` 프로필에서는 이메일과 SMS 모두 실제로 발송하지 않습니다. 이메일 입력 후 화면에 표시되는 **테스트용 이메일 인증 링크 열기**를 누르면 실제 메일의 링크와 같은 서버 인증 경로를 거칩니다. 공모전 개발·로컬 시연용 기능으로, 메일 주소의 실제 소유 여부를 증명하지 않습니다.
 
@@ -18,6 +18,7 @@
 |---|---|
 | `EMAIL_MODE=mock` | 실제 발송 없이 개발용 링크를 반환. `local` 기본값 |
 | `EMAIL_MODE=live` | 기존 SMTP 어댑터로 실제 발송. 개발용 링크를 API에 반환하지 않음 |
+| `EMAIL_MODE=brevo` | Brevo HTTPS API로 실제 발송. Render 배포 권장 방식 |
 | `EMAIL_MODE=disabled` | 발송 API가 503 반환. `local` 외 기본값 |
 
 `mock`은 활성 프로필이 모두 `local`/`test`이고 `server.address`가 `127.0.0.1` 또는 `::1`일 때만 허용합니다. 운영 프로필과 함께 쓰거나 외부 주소에 바인딩하면 서버 시작이 실패합니다. 공개 터널/리버스 프록시로 로컬 모의 서버를 노출하지 마세요. 모의 모드는 이메일 소유 확인을 하지 않으므로 공개 서비스에는 사용할 수 없습니다.
@@ -41,6 +42,20 @@ cd backend
 `MAIL_PUBLIC_BASE_URL`은 인증 링크를 열 때 접근할 공개 HTTPS 주소이며 경로·쿼리·사용자정보 없이 지정합니다. 예: `https://sportsmate.example.com`. 요청의 Host 헤더로 링크를 만들지 않습니다. SMTP 정보만 추가해도 로컬에서는 계속 모의 모드이므로, 실제 발송 테스트 시 `EMAIL_MODE=live`를 명시해야 합니다. 테스트를 마치면 `EMAIL_MODE=mock`으로 복구합니다.
 
 실제 SMTP 설정이 누락되거나 발송이 실패하면 성공으로 처리하지 않고 503 오류를 반환합니다. 메일 계정·키·비밀번호는 서버 환경변수 또는 Git 제외 설정 파일에만 보관합니다. 실제 SMTP 발송·수신은 이번 자동 테스트에서 수행하지 않습니다.
+
+## Brevo HTTPS API
+
+Render처럼 SMTP 연결이 제한될 수 있는 환경에서는 다음 변수를 사용합니다.
+
+```text
+EMAIL_MODE=brevo
+BREVO_API_KEY=Brevo에서 발급한 API 키
+MAIL_FROM=Brevo에서 인증한 발신 이메일
+MAIL_FROM_NAME=SportsMate
+MAIL_PUBLIC_BASE_URL=https://배포된-공개-호스트
+```
+
+`BREVO_API_KEY`는 소스나 설정 예시 파일에 기록하지 않고 배포 서비스의 비밀 환경변수에만 저장합니다. 발신 이메일은 Brevo의 Senders 화면에서 `Verified` 상태여야 합니다.
 
 다른 메일 API 공급자를 쓰려면 `member/mail/VerificationEmailSender`를 구현하고 `liveVerificationEmailSender` 빈을 기존 SMTP 어댑터 대신 등록하세요. 인증 화면과 가입 API는 그대로 사용합니다. 하나의 live 빈만 등록해야 합니다.
 

@@ -43,6 +43,8 @@ app:
     mode: ${EMAIL_MODE:disabled}
     public-base-url: ${MAIL_PUBLIC_BASE_URL:}
     from: ${MAIL_FROM:}
+    from-name: ${MAIL_FROM_NAME:SportsMate}
+    brevo-api-key: ${BREVO_API_KEY:}
   auth:
     jwt-secret: ${JWT_SECRET:}
     secure-cookie: true

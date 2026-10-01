@@ -23,7 +23,7 @@ public class EmailGateway {
     Environment environment
   ) {
     if (
-      !Set.of("mock", "disabled", "live").contains(mode)
+      !Set.of("mock", "disabled", "live", "brevo").contains(mode)
     ) throw new IllegalStateException("Unsupported app.mail.mode");
     mock = "mock".equals(mode);
     if (mock) {
@@ -50,7 +50,7 @@ public class EmailGateway {
       }
     }
     this.publicBaseUrl = publicBaseUrl.replaceAll("/+$", "");
-    if ("live".equals(mode)) {
+    if (Set.of("live", "brevo").contains(mode)) {
       URI base = URI.create(this.publicBaseUrl);
       if (
         !"https".equals(base.getScheme()) ||

@@ -36,6 +36,6 @@ app:
     seed-enabled: ${ADMIN_SEED_ENABLED:false}
     require-strong-password: true
   mail:
-    mode: ${EMAIL_MODE:live}
+    mode: ${EMAIL_MODE:disabled}
   demo:
     enabled: false
