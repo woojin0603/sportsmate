@@ -17,7 +17,7 @@ const categories = [
   ["qna", "Q&A", MessageCircle],
 ];
 const defaults = {
-  siteTitle: "SportMap",
+  siteTitle: "MySportsMate",
   announcement: "",
   popupEnabled: false,
   popupTitle: "",

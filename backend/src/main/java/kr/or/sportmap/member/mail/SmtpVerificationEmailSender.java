@@ -46,12 +46,12 @@ public class SmtpVerificationEmailSender implements VerificationEmailSender {
       );
       helper.setFrom(from);
       helper.setTo(email);
-      helper.setSubject("[SportMap] 회원가입 이메일 인증");
+      helper.setSubject("[MySportsMate] 회원가입 이메일 인증");
       helper.setText(
-        "SportMap 이메일 인증\n아래 링크를 10분 안에 열어 인증을 완료해 주세요.\n" +
+        "MySportsMate 이메일 인증\n아래 링크를 10분 안에 열어 인증을 완료해 주세요.\n" +
           confirmationUrl +
           "\n요청하지 않았다면 무시하세요.",
-        "<div style=\"font-family:sans-serif;padding:32px;color:#173e32\"><h2>SportMap 이메일 인증</h2><p>아래 버튼을 눌러 인증을 완료해 주세요.</p><a href=\"" +
+        "<div style=\"font-family:sans-serif;padding:32px;color:#173e32\"><h2>MySportsMate 이메일 인증</h2><p>아래 버튼을 눌러 인증을 완료해 주세요.</p><a href=\"" +
           HtmlUtils.htmlEscape(confirmationUrl) +
           "\">이메일 인증 완료</a><p>발송 후 10분 동안 유효합니다. 요청하지 않았다면 무시하세요.</p></div>"
       );

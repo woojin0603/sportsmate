@@ -347,8 +347,8 @@ export default function FitnessPage({ user, openAuth, notify }) {
                 </button>
               </form>
               <p className="fitness-note">
-                <AlertCircle size={15} /> 공식 인증서가 아닌 SportMap의 참고용
-                A~D 등급입니다. 원본 결과지와 추출값을 대조해 주세요.
+                <AlertCircle size={15} /> 공식 인증서가 아닌 MySportsMate의
+                참고용 A~D 등급입니다. 원본 결과지와 추출값을 대조해 주세요.
               </p>
             </div>
           </section>

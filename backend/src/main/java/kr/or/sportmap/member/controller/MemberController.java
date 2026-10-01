@@ -87,7 +87,7 @@ public class MemberController {
         "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"
       )
       .body(
-        "<!doctype html><html lang=\"ko\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><title>SportMap 이메일 인증</title><body style=\"font-family:sans-serif;background:#f5f8f3;color:#173e32;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"background:white;padding:40px;border-radius:18px;text-align:center;box-shadow:0 15px 50px #173e3222\"><h1>이메일 인증 완료</h1><p>SportMap 회원가입 화면으로 돌아가 회원가입을 완료해 주세요.</p></main></body></html>"
+        "<!doctype html><html lang=\"ko\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><title>MySportsMate 이메일 인증</title><body style=\"font-family:sans-serif;background:#f5f8f3;color:#173e32;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"background:white;padding:40px;border-radius:18px;text-align:center;box-shadow:0 15px 50px #173e3222\"><h1>이메일 인증 완료</h1><p>MySportsMate 회원가입 화면으로 돌아가 회원가입을 완료해 주세요.</p></main></body></html>"
       );
   }
 

@@ -19,8 +19,7 @@ public class BrevoVerificationEmailSender implements VerificationEmailSender {
   private static final Logger log = LoggerFactory.getLogger(
     BrevoVerificationEmailSender.class
   );
-  private static final String SEND_URL =
-    "https://api.brevo.com/v3/smtp/email";
+  private static final String SEND_URL = "https://api.brevo.com/v3/smtp/email";
 
   private final RestClient client;
   private final String apiKey;
@@ -31,12 +30,15 @@ public class BrevoVerificationEmailSender implements VerificationEmailSender {
     RestClient.Builder builder,
     @Value("${app.mail.brevo-api-key:}") String apiKey,
     @Value("${app.mail.from:}") String from,
-    @Value("${app.mail.from-name:SportsMate}") String fromName
+    @Value("${app.mail.from-name:MySportsMate}") String fromName
   ) {
     this.client = builder.build();
     this.apiKey = apiKey;
     this.from = from;
-    this.fromName = fromName;
+    this.fromName =
+      fromName.equals("SportMap") || fromName.equals("SportsMate")
+        ? "MySportsMate"
+        : fromName;
   }
 
   @Override
@@ -60,21 +62,21 @@ public class BrevoVerificationEmailSender implements VerificationEmailSender {
       "to",
       List.of(Map.of("email", email)),
       "subject",
-      "[SportsMate] 회원가입 이메일 인증",
+      "[MySportsMate] 회원가입 이메일 인증",
       "textContent",
-      "SportsMate 이메일 인증\n아래 링크를 10분 안에 열어 인증을 완료해 주세요.\n" +
-      confirmationUrl +
-      "\n요청하지 않았다면 무시하세요.",
+      "MySportsMate 이메일 인증\n아래 링크를 10분 안에 열어 인증을 완료해 주세요.\n" +
+        confirmationUrl +
+        "\n요청하지 않았다면 무시하세요.",
       "htmlContent",
       "<div style=\"font-family:sans-serif;padding:32px;color:#173e32\">" +
-      "<h2>SportsMate 이메일 인증</h2>" +
-      "<p>아래 버튼을 눌러 인증을 완료해 주세요.</p>" +
-      "<a href=\"" +
-      safeUrl +
-      "\" style=\"display:inline-block;padding:12px 18px;background:#173e32;color:#fff;text-decoration:none;border-radius:8px\">" +
-      "이메일 인증 완료</a>" +
-      "<p>발송 후 10분 동안 유효합니다. 요청하지 않았다면 무시하세요.</p>" +
-      "</div>"
+        "<h2>MySportsMate 이메일 인증</h2>" +
+        "<p>아래 버튼을 눌러 인증을 완료해 주세요.</p>" +
+        "<a href=\"" +
+        safeUrl +
+        "\" style=\"display:inline-block;padding:12px 18px;background:#173e32;color:#fff;text-decoration:none;border-radius:8px\">" +
+        "이메일 인증 완료</a>" +
+        "<p>발송 후 10분 동안 유효합니다. 요청하지 않았다면 무시하세요.</p>" +
+        "</div>"
     );
 
     try {

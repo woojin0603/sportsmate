@@ -264,7 +264,7 @@ function DataGuidePage() {
       <span className="eyebrow">OPEN DATA TRANSPARENCY</span>
       <h1>공공데이터 활용 안내</h1>
       <p className="policy-lead">
-        SportMap은 체력 확인부터 운동 추천, 주변 시설과 프로그램 탐색, 일정
+        MySportsMate는 체력 확인부터 운동 추천, 주변 시설과 프로그램 탐색, 일정
         관리까지 한 흐름으로 연결합니다.
       </p>
       <div className="data-table-wrap">
@@ -323,7 +323,7 @@ function PolicyPage({ kind }) {
   const privacy = kind === "privacy";
   return (
     <section className="page-section policy-page">
-      <span className="eyebrow">SPORTMAP POLICY</span>
+      <span className="eyebrow">MYSPORTSMATE POLICY</span>
       <h1>{privacy ? "개인정보처리방침" : "이용약관"}</h1>
       <p className="policy-lead">
         시행일: 2026년 9월 25일 · 공모전 시제품 운영 기준
@@ -368,7 +368,7 @@ function PolicyPage({ kind }) {
           <div className="policy-card">
             <h2>서비스 성격</h2>
             <p>
-              SportMap은 공공 체육데이터를 탐색하고 운동 계획을 관리하는
+              MySportsMate는 공공 체육데이터를 탐색하고 운동 계획을 관리하는
               시제품입니다. 시설 운영과 프로그램 접수·확정은 각 운영기관이
               담당합니다.
             </p>
@@ -531,7 +531,7 @@ function Header({
         <Menu size={22} />
       </button>
       <div className="breadcrumb">
-        <span>SportMap</span>
+        <span>MySportsMate</span>
         <ChevronRight size={14} />
         <strong>{section}</strong>
       </div>
@@ -660,7 +660,7 @@ function Sidebar({
           </span>
           <div>
             <strong>
-              sport<span>map</span>
+              MySports<span>Mate</span>
             </strong>
             <small>MOVE YOUR WAY</small>
           </div>
@@ -3450,7 +3450,7 @@ function AccountPage({ user, openAuth, onLogout, navigate, notify }) {
     <>
       <div className="page-intro intro-account">
         <div>
-          <span className="eyebrow">MY SPORTMAP</span>
+          <span className="eyebrow">MY SPORTS MATE</span>
           <h1>
             {user.fullName}님,
             <br />
@@ -3858,7 +3858,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           <span className="auth-mark">
             <Navigation size={24} fill="currentColor" />
           </span>
-          <span className="eyebrow">WELCOME TO SPORTMAP</span>
+          <span className="eyebrow">WELCOME TO MYSPORTSMATE</span>
           <h2>
             {mode === "login"
               ? "다시 만나서 반가워요."
@@ -3868,7 +3868,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
           </h2>
           <p>
             {mode === "login"
-              ? "운동을 시작하는 가장 쉬운 방법, SportMap."
+              ? "운동을 시작하는 가장 쉬운 방법, MySportsMate."
               : mode === "restore"
                 ? "탈퇴 요청 후 7일 안에는 기존 계정으로 돌아올 수 있습니다."
                 : "몇 가지 정보만 입력하면 시작할 수 있어요."}
@@ -4368,7 +4368,7 @@ export default function App() {
       {path === "/admin" && user?.role === "ADMIN" ? (
         <div className="admin-layout">
           <header className="admin-header">
-            <strong>SportMap 운영 관리</strong>
+            <strong>MySportsMate 운영 관리</strong>
             <div>
               <button onClick={() => navigate("/")}>사이트 보기</button>
               <button onClick={onLogout}>로그아웃</button>
@@ -4412,7 +4412,7 @@ export default function App() {
               {routedContent}
               <footer className="footer">
                 <span>
-                  © {new Date().getFullYear()} SportMap. 오늘의 움직임을
+                  © {new Date().getFullYear()} MySportsMate. 오늘의 움직임을
                   응원합니다.
                 </span>
                 <span className="footer-links">
@@ -4480,7 +4480,7 @@ export default function App() {
             >
               <X size={20} />
             </button>
-            <span className="eyebrow">SPORTMAP NOTICE</span>
+            <span className="eyebrow">MYSPORTSMATE NOTICE</span>
             <h2 id="site-popup-title">{siteSettings.popupTitle}</h2>
             <p>{siteSettings.popupContent}</p>
             <div className="site-popup-actions">

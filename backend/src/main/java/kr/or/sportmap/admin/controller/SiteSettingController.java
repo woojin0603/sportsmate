@@ -62,8 +62,16 @@ public class SiteSettingController {
     String popupContent
   ) {
     static SettingResponse of(SiteSetting setting) {
+      // 이전 기본 브랜드명이 저장된 운영 DB도 새 이름으로 즉시 표시한다.
+      String siteTitle =
+        setting.siteTitle == null ||
+        setting.siteTitle.isBlank() ||
+        setting.siteTitle.equals("SportMap") ||
+        setting.siteTitle.equals("SportsMate")
+          ? "MySportsMate"
+          : setting.siteTitle;
       return new SettingResponse(
-        setting.siteTitle,
+        siteTitle,
         setting.announcement,
         Boolean.TRUE.equals(setting.popupEnabled),
         setting.popupTitle == null ? "" : setting.popupTitle,

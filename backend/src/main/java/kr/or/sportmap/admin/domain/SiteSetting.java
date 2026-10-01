@@ -14,7 +14,7 @@ public class SiteSetting {
   public Long id = 1L;
 
   @Column(nullable = false, length = 80)
-  public String siteTitle = "SportMap";
+  public String siteTitle = "MySportsMate";
 
   @Column(nullable = false, length = 500)
   public String announcement = "";
