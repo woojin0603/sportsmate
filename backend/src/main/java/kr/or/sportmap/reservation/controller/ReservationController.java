@@ -86,11 +86,15 @@ public class ReservationController {
     Reservation.Status status
   ) {
     static ReservationResponse of(Reservation r) {
+      // 기간이 없는 공공 프로그램의 내부 기준값은 화면에 실제 일정처럼 노출하지 않는다.
+      boolean hasKnownSchedule =
+        r.program.sourceKey == null ||
+        (r.program.beginsOn != null && r.program.endsOn != null);
       return new ReservationResponse(
         r.id,
         r.program.getId(),
-        r.startsAt,
-        r.endsAt,
+        hasKnownSchedule ? r.startsAt : null,
+        hasKnownSchedule ? r.endsAt : null,
         r.status
       );
     }

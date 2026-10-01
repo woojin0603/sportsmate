@@ -20,9 +20,10 @@ public class Reservation {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   public Program program;
 
-  // 운영 기간을 제공하지 않는 공공 프로그램은 관심 일정으로만 저장한다.
+  @Column(nullable = false)
   public Instant startsAt;
 
+  @Column(nullable = false)
   public Instant endsAt;
 
   @Enumerated(EnumType.STRING)

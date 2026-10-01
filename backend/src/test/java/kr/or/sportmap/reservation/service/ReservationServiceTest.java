@@ -68,8 +68,12 @@ class ReservationServiceTest {
     Reservation result = service.create("tester", 7L, null, null);
 
     assertThat(result.status).isEqualTo(Reservation.Status.REQUESTED);
-    assertThat(result.startsAt).isNull();
-    assertThat(result.endsAt).isNull();
+    assertThat(result.startsAt).isEqualTo(
+      java.time.Instant.parse("2000-01-01T00:00:00Z")
+    );
+    assertThat(result.endsAt).isEqualTo(
+      java.time.Instant.parse("2000-01-01T00:00:00Z")
+    );
     ArgumentCaptor<Reservation> saved = ArgumentCaptor.forClass(
       Reservation.class
     );

@@ -18,6 +18,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReservationService {
 
+  // 운영 기간 미제공 항목은 기존 NOT NULL 스키마와 호환되는 과거 기준값으로 보관한다.
+  private static final Instant UNKNOWN_SCHEDULE = Instant.parse(
+    "2000-01-01T00:00:00Z"
+  );
+
   private final ReservationRepository reservations;
   private final ProgramRepository programs;
   private final MemberService members;
@@ -72,13 +77,13 @@ public class ReservationService {
         program.beginsOn != null && program.endsOn != null;
       Instant periodStart = hasCompletePeriod
         ? program.beginsOn.atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant()
-        : null;
+        : UNKNOWN_SCHEDULE;
       Instant periodEnd = hasCompletePeriod
         ? program.endsOn
             .plusDays(1)
             .atStartOfDay(ZoneId.of("Asia/Seoul"))
             .toInstant()
-        : null;
+        : UNKNOWN_SCHEDULE;
       return reservations.save(
         new Reservation(
           member,
