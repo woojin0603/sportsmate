@@ -3393,15 +3393,33 @@ textarea:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+.signup-demographics {
+  grid-template-columns: minmax(0, 1fr) 88px;
+}
+.signup-demographics > label {
+  min-width: 0;
+}
 .birth-date-fields {
   display: grid;
-  grid-template-columns: 1.25fr 0.8fr 0.8fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
   gap: 6px;
 }
 .birth-date-fields select {
   min-width: 0;
-  padding-left: 8px;
-  padding-right: 6px;
+  padding-left: 7px;
+  padding-right: 4px;
+}
+@media (max-width: 480px) {
+  .modal {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+  .signup-demographics {
+    grid-template-columns: 1fr;
+  }
+  .signup-demographics > label:last-child {
+    width: 96px;
+  }
 }
 .form-error {
   background: #fff1ef;

@@ -3939,7 +3939,7 @@ function AuthModal({ close, onSuccess, notify, initialMode = "login" }) {
             </label>
             {mode === "signup" && (
               <>
-                <div className="form-two">
+                <div className="form-two signup-demographics">
                   <BirthDateSelect
                     value={form.birthDate}
                     onChange={(birthDate) =>
