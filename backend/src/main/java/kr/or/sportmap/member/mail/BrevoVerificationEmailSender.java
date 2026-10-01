@@ -2,17 +2,23 @@ package kr.or.sportmap.member.mail;
 
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.HtmlUtils;
 
 @Component("brevoVerificationEmailSender")
 public class BrevoVerificationEmailSender implements VerificationEmailSender {
 
+  private static final Logger log = LoggerFactory.getLogger(
+    BrevoVerificationEmailSender.class
+  );
   private static final String SEND_URL =
     "https://api.brevo.com/v3/smtp/email";
 
@@ -36,6 +42,11 @@ public class BrevoVerificationEmailSender implements VerificationEmailSender {
   @Override
   public void send(String email, String confirmationUrl) {
     if (apiKey.isBlank() || from.isBlank()) {
+      log.error(
+        "Brevo email configuration is incomplete (apiKeyConfigured={}, fromConfigured={})",
+        !apiKey.isBlank(),
+        !from.isBlank()
+      );
       throw new ResponseStatusException(
         HttpStatus.SERVICE_UNAVAILABLE,
         "이메일 발송 설정이 필요합니다. 관리자에게 문의해 주세요"
@@ -75,11 +86,25 @@ public class BrevoVerificationEmailSender implements VerificationEmailSender {
         .body(request)
         .retrieve()
         .toBodilessEntity();
-    } catch (RestClientException error) {
-      throw new ResponseStatusException(
-        HttpStatus.SERVICE_UNAVAILABLE,
-        "인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요"
+    } catch (RestClientResponseException error) {
+      log.error(
+        "Brevo email API rejected the request with HTTP status {}",
+        error.getStatusCode().value()
       );
+      throw unavailable();
+    } catch (RestClientException error) {
+      log.error(
+        "Brevo email API request failed before receiving a response ({})",
+        error.getClass().getSimpleName()
+      );
+      throw unavailable();
     }
+  }
+
+  private ResponseStatusException unavailable() {
+    return new ResponseStatusException(
+      HttpStatus.SERVICE_UNAVAILABLE,
+      "인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요"
+    );
   }
 }
