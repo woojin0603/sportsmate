@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
   private static final String PREFS = "sportmap_mobile";
   private static final String SERVER_URL = "server_url";
   private static final int FILE_CHOOSER_REQUEST = 4102;
-  private static final String DEFAULT_URL = "http://10.0.2.2:8080";
+  private static final String DEFAULT_URL = BuildConfig.SERVER_URL;
 
   private WebView webView;
   private ProgressBar progressBar;
@@ -47,7 +47,10 @@ public class MainActivity extends Activity {
     setContentView(createContentView());
     configureWebView();
     if (savedInstanceState != null && webView.restoreState(savedInstanceState) != null) return;
-    String savedUrl = preferences.getString(SERVER_URL, "");
+    // 배포 앱은 검증된 HTTPS 서버만 사용하고 디버그 앱에서만 개발 서버를 선택한다.
+    String savedUrl = BuildConfig.DEBUG
+        ? preferences.getString(SERVER_URL, "")
+        : DEFAULT_URL;
     if (savedUrl.isBlank()) {
       showServerDialog(true);
     } else {
@@ -72,13 +75,15 @@ public class MainActivity extends Activity {
     title.setTypeface(null, android.graphics.Typeface.BOLD);
     bar.addView(title, new LinearLayout.LayoutParams(0, dp(48), 1));
 
-    Button settings = new Button(this);
-    settings.setText("서버 설정");
-    settings.setTextColor(Color.rgb(23, 62, 50));
-    settings.setTextSize(12);
-    settings.setAllCaps(false);
-    settings.setOnClickListener(view -> showServerDialog(false));
-    bar.addView(settings, new LinearLayout.LayoutParams(dp(96), dp(42)));
+    if (BuildConfig.DEBUG) {
+      Button settings = new Button(this);
+      settings.setText("서버 설정");
+      settings.setTextColor(Color.rgb(23, 62, 50));
+      settings.setTextSize(12);
+      settings.setAllCaps(false);
+      settings.setOnClickListener(view -> showServerDialog(false));
+      bar.addView(settings, new LinearLayout.LayoutParams(dp(96), dp(42)));
+    }
     root.addView(bar, new LinearLayout.LayoutParams(-1, dp(64)));
 
     FrameLayout browser = new FrameLayout(this);
@@ -258,6 +263,7 @@ public class MainActivity extends Activity {
       URI uri = URI.create(trimmed);
       if (!("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) return null;
       if (uri.getHost() == null) return null;
+      if (!BuildConfig.DEBUG && !sameOrigin(uri, URI.create(DEFAULT_URL))) return null;
       return trimmed;
     } catch (Exception ignored) {
       return null;
@@ -270,7 +276,7 @@ public class MainActivity extends Activity {
     webView.loadUrl(serverUrl);
   }
 
-  /** 현재 설정된 SportMap 서버만 앱 안에서 열고 외부 사이트는 기본 브라우저로 연다. */
+  /** 현재 설정된 MySportsMate 서버만 앱 안에서 열고 외부 사이트는 기본 브라우저로 연다. */
   private boolean openOutsideWhenNeeded(Uri uri) {
     String scheme = uri.getScheme();
     if (!("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
@@ -298,6 +304,13 @@ public class MainActivity extends Activity {
   private int effectivePort(Uri uri) {
     if (uri.getPort() >= 0) return uri.getPort();
     return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+  }
+
+  /** 배포 서버 주소의 프로토콜·호스트·포트가 모두 같은지 확인한다. */
+  private boolean sameOrigin(URI left, URI right) {
+    return java.util.Objects.equals(left.getScheme(), right.getScheme()) &&
+        java.util.Objects.equals(left.getHost(), right.getHost()) &&
+        effectivePort(Uri.parse(left.toString())) == effectivePort(Uri.parse(right.toString()));
   }
 
   /** 연결 오류 화면을 표시하고 로딩 표시를 종료한다. */
