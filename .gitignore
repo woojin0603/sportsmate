@@ -53,3 +53,4 @@ sportmap-mobile-local.*
 android/.android-codex/
 __pycache__/
 *.py[cod]
+tools/.cache/

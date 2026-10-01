@@ -4,15 +4,18 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.parse
 import urllib.request
 from urllib.error import HTTPError, URLError
+from pathlib import Path
 
 
-FACILITY_ENDPOINT = "https://apis.data.go.kr/B551014/SRVC_OD_API_FACIL_MNG"
-COURSE_ENDPOINT = "https://apis.data.go.kr/B551014/SRVC_OD_API_FACIL_COURSE"
+FACILITY_ENDPOINT = "https://apis.data.go.kr/B551014/SRVC_OD_API_FACIL_MNG/todz_api_facil_mng_i"
+COURSE_ENDPOINT = "https://apis.data.go.kr/B551014/SRVC_OD_API_FACIL_COURSE/todz_api_facil_course_i"
 DATASET = "KSPO_SPORTS_VOUCHER"
 WEEKDAYS = ("월", "화", "수", "목", "금", "토", "일")
+MAX_ATTEMPTS = 6
 
 
 def api_key():
@@ -32,8 +35,30 @@ def fetch(endpoint, key, **parameters):
     }
     url = endpoint + "?" + urllib.parse.urlencode(query)
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.load(response)
+    label = "facility API" if endpoint == FACILITY_ENDPOINT else "course API"
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                payload = json.load(response)
+            break
+        except HTTPError as error:
+            detail = error.read().decode("utf-8", errors="replace")[:500]
+            if error.code < 500 and error.code != 429:
+                raise RuntimeError(f"{label} HTTP {error.code}: {detail}") from error
+            last_error = f"HTTP {error.code}: {detail}"
+        except (URLError, ConnectionResetError, TimeoutError, OSError) as error:
+            last_error = str(error)
+        if attempt == MAX_ATTEMPTS:
+            raise RuntimeError(
+                f"{label} failed after {MAX_ATTEMPTS} attempts: {last_error}"
+            )
+        wait_seconds = min(2 ** (attempt - 1), 16)
+        print(
+            f"{label} request failed; retrying in {wait_seconds}s "
+            f"({attempt}/{MAX_ATTEMPTS})",
+            flush=True,
+        )
+        time.sleep(wait_seconds)
     header = payload.get("response", {}).get("header", {})
     if str(header.get("resultCode")) not in {"0", "00"}:
         raise RuntimeError("Public API error: " + str(header.get("resultCode")))
@@ -62,16 +87,33 @@ def schedule(row):
     return " / ".join(filter(None, ["·".join(days), period])) or None
 
 
-def lookup_facility(key, course):
-    items, _ = fetch(
-        FACILITY_ENDPOINT,
-        key,
-        brno=course.get("brno"),
-        facil_sn=course.get("facil_sn"),
-        numOfRows=10,
-    )
-    target = facility_key(course)
-    return next((item for item in items if facility_key(item) == target), None)
+def load_facilities(key, cache_path, refresh=False):
+    cache = Path(cache_path)
+    if cache.exists() and not refresh:
+        with cache.open("r", encoding="utf-8") as source:
+            rows = json.load(source)
+        print(f"Loaded {len(rows)} facilities from {cache}", flush=True)
+    else:
+        rows = []
+        page = 0
+        total = 1
+        while page * 100 < total:
+            page += 1
+            items, total = fetch(
+                FACILITY_ENDPOINT,
+                key,
+                pageNo=page,
+                numOfRows=100,
+            )
+            rows.extend(items)
+            if page % 25 == 0 or page * 100 >= total:
+                print(f"Downloaded {len(rows)}/{total} facilities", flush=True)
+            time.sleep(0.15)
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        with cache.open("w", encoding="utf-8") as target:
+            json.dump(rows, target, ensure_ascii=False)
+        print(f"Saved facility cache to {cache}", flush=True)
+    return {facility_key(row): row for row in rows if facility_key(row) != ":"}
 
 
 def import_row(base_url, import_key, course, facility):
@@ -108,8 +150,12 @@ def import_row(base_url, import_key, course, facility):
         headers={"Content-Type": "application/json", "X-Import-Key": import_key},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        response.read()
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response.read()
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"SportMap import API HTTP {error.code}: {detail}") from error
     return True
 
 
@@ -118,6 +164,11 @@ def main():
     parser.add_argument("--base-url", default="http://localhost:8080")
     parser.add_argument("--limit", type=int, default=240)
     parser.add_argument("--page-size", type=int, default=100)
+    parser.add_argument(
+        "--facility-cache",
+        default="tools/.cache/sports-voucher-facilities.json",
+    )
+    parser.add_argument("--refresh-facilities", action="store_true")
     args = parser.parse_args()
     if args.limit < 1 or args.page_size < 1 or args.page_size > 100:
         parser.error("limit must be positive and page-size must be 1..100")
@@ -126,10 +177,15 @@ def main():
         parser.error("Set IMPORT_KEY to the same value as the server")
     key = api_key()
     imported = skipped = page = 0
-    facility_cache = {}
+    facilities = {}
     seen_courses = set()
 
     try:
+        facilities = load_facilities(
+            key,
+            args.facility_cache,
+            args.refresh_facilities,
+        )
         while imported < args.limit:
             page += 1
             courses, total = fetch(
@@ -146,10 +202,7 @@ def main():
                     skipped += 1
                     continue
                 seen_courses.add(course_no)
-                key_value = facility_key(course)
-                if key_value not in facility_cache:
-                    facility_cache[key_value] = lookup_facility(key, course)
-                facility = facility_cache[key_value]
+                facility = facilities.get(facility_key(course))
                 if facility is None or not import_row(args.base_url, import_key, course, facility):
                     skipped += 1
                     continue
@@ -163,7 +216,7 @@ def main():
     except (HTTPError, URLError, RuntimeError) as error:
         raise SystemExit(f"Sync stopped after {imported} imports: {error}") from error
 
-    print(f"Done: imported {imported}, skipped {skipped}, facilities {len(facility_cache)}")
+    print(f"Done: imported {imported}, skipped {skipped}, facilities {len(facilities)}")
 
 
 if __name__ == "__main__":
